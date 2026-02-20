@@ -1,5 +1,5 @@
 ---
-name: Developer
+name: developer
 description: Implements features and fixes bugs. Works on feature branches and creates PRs for review - never pushes directly to main.
 model: sonnet
 color: blue

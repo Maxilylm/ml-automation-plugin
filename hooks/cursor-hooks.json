@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh",
+        "matcher": "git commit"
+      },
+      {
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-deploy.sh local",
+        "matcher": "docker-compose up"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "if command -v black &>/dev/null; then black --quiet \"$CLAUDE_TOOL_ARG_FILE_PATH\" 2>/dev/null || true; fi"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-dashboard.sh \"$CLAUDE_TOOL_ARG_FILE_PATH\"",
+        "matcher": "dashboard"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "mkdir -p .claude && echo \"$(date '+%Y-%m-%d %H:%M:%S') - Tests run\" >> .claude/workflow.log",
+        "matcher": "pytest"
+      }
+    ]
+  }
+}

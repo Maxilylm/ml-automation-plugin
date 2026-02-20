@@ -1,6 +1,5 @@
 {
   "name": "ml-automation",
-  "displayName": "ML Automation",
   "description": "End-to-end ML automation workflow: 10 specialized agents, slash commands for every ML lifecycle stage, and quality gate hooks",
   "version": "1.0.0",
   "author": {
@@ -10,8 +9,8 @@
   "repository": "https://github.com/maxilylm/ml-automation-plugin",
   "license": "MIT",
   "keywords": ["ml", "machine-learning", "data-science", "automation", "agents", "eda", "mlops", "deployment", "workflows"],
-  "skills": "./commands/",
+  "skills": "./skills/",
   "agents": "./agents/",
   "commands": "./commands/",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/cursor-hooks.json"
 }
