@@ -79,33 +79,46 @@ The `/team coldstart` command initiates an end-to-end data pipeline:
 - Quality check: PASSED (no critical issues)
 ```
 
-### Stage 2: Analysis (Parallel)
+### Stage 2: Analysis (Sequential → Parallel)
 
-**Invoke agents in parallel:**
+**Step 2a: Run EDA first** (generates structured report for downstream agents):
 
-1. **eda-analyst** - Comprehensive EDA
+1. **eda-analyst** - Comprehensive EDA + Structured Report
    ```
    Perform thorough exploratory data analysis on {data_path}.
    Generate statistics, visualizations, and identify data quality issues.
-   Identify key patterns, outliers, and relationships.
-   Output: EDA report with recommendations
+
+   CRITICAL: Use ml_utils to save structured EDA report:
+   - Copy ml_utils.py from ~/.config/opencode/ml-automation/templates/ml_utils.py to src/ml_utils.py
+   - Call generate_eda_summary(df, target_col) and save_eda_report(summary)
+   - Also save reports/eda_report.md with narrative findings
+
+   Output: EDA report + .claude/eda_report.json (structured)
    ```
+
+**Step 2b: Run these in parallel** (after EDA completes, so they can read its report):
 
 2. **ml-theory-advisor** - Data quality and leakage review (if ML mode)
    ```
    Review the dataset {data_path} for potential data leakage risks.
    Check for features that may contain target information.
+   Read .claude/eda_report.json for prior EDA context if available.
    Validate data splitting strategy.
    Output: Quality and leakage assessment report
    ```
 
-3. **feature-engineering-analyst** - Column/feature recommendations
+3. **feature-engineering-analyst** - ML Feature Engineering
    ```
-   Analyze {data_path} and recommend:
-   - Feature engineering strategies (for ML mode)
-   - Key metrics and dimensions (for analysis mode)
-   - Data transformations needed
-   Output: Feature/column recommendations
+   Analyze {data_path} and engineer predictive features.
+   READ .claude/eda_report.json first — use the EDA findings (distributions, correlations,
+   quality issues, column types) to inform your feature engineering strategy.
+
+   Recommend:
+   - Feature transformations (log, binning, interactions, temporal)
+   - Aggregation features
+   - Encoding strategies
+   - Features to drop (leakage, redundancy)
+   Output: Feature engineering plan with implementation code
    ```
 
 **Output:**
@@ -143,14 +156,30 @@ The `/team coldstart` command initiates an end-to-end data pipeline:
 
 **Code to generate:**
 ```python
+# First, ensure ml_utils.py is in the project (copy from plugin templates if not present)
+# src/ml_utils.py provides: load_data, detect_column_types, build_preprocessor, safe_split, etc.
+
 # src/processing.py
-def process_data(df, mode='ml'):
-    """Process raw data for modeling or analysis."""
-    # Handle missing values
-    # Encode categoricals
-    # Scale numerics (if needed)
-    # Create derived columns
-    return processed_df
+from src.ml_utils import detect_column_types, build_preprocessor, load_eda_report
+
+def process_data(df, target_col=None, mode='ml'):
+    """Process raw data for modeling or analysis.
+
+    Uses prior EDA report if available to inform preprocessing decisions.
+    """
+    # Load EDA context if available
+    eda_report = load_eda_report()
+
+    # Detect column types (or use EDA report's classification)
+    if eda_report and "column_types" in eda_report:
+        col_types = eda_report["column_types"]
+    else:
+        col_types = detect_column_types(df, target_col=target_col)
+
+    # Build preprocessor
+    preprocessor = build_preprocessor(col_types["numerical"], col_types["categorical"])
+
+    return preprocessor, col_types
 ```
 
 **Output:**

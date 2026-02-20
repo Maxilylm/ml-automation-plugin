@@ -47,6 +47,48 @@ You are performing comprehensive exploratory data analysis on any provided datas
 - Highlight potential feature engineering opportunities
 - Note any red flags for modeling
 
+### 8. Save Structured EDA Report
+
+**CRITICAL**: Always save a structured EDA report for downstream agents (especially feature engineering):
+
+```python
+# Copy ml_utils.py from plugin templates if not present
+import shutil, os
+utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
+if os.path.exists(utils_src) and not os.path.exists("src/ml_utils.py"):
+    os.makedirs("src", exist_ok=True)
+    shutil.copy2(utils_src, "src/ml_utils.py")
+
+from src.ml_utils import generate_eda_summary, save_eda_report
+
+eda_summary = generate_eda_summary(df, target_col=target_col)
+save_eda_report(eda_summary)  # Saves to .claude/eda_report.json
+
+# Also save human-readable report
+os.makedirs("reports", exist_ok=True)
+# ... save markdown report to reports/eda_report.md
+```
+
+This structured report is automatically consumed by the `feature-engineering-analyst` agent to make informed feature engineering decisions.
+
+## Reusable Utilities
+
+Before writing boilerplate code, check if `src/ml_utils.py` exists in the project. If not, copy it from the plugin templates:
+
+```python
+import shutil, os
+utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
+if not os.path.exists("src/ml_utils.py"):
+    os.makedirs("src", exist_ok=True)
+    shutil.copy2(utils_src, "src/ml_utils.py")
+```
+
+Use these functions instead of reimplementing:
+- `load_data(path)` — loads CSV/Excel/JSON/Parquet
+- `detect_column_types(df, target_col)` — classifies columns
+- `generate_eda_summary(df, target_col)` — creates structured summary
+- `save_eda_report(report_data)` — persists report for downstream agents
+
 ## Output Format
 
 Provide findings in clear sections with:

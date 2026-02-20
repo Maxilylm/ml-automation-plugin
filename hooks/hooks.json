@@ -57,6 +57,17 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "eda-analyst",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-eda.sh"
+          }
+        ]
+      }
     ]
   }
 }

@@ -11,16 +11,36 @@ You are creating a robust data processing pipeline. For ML tasks, this prevents 
 
 ## Preprocessing Workflow
 
+### 0. Initialize Reusable Utilities
+
+Before writing boilerplate, copy the shared utilities into the project:
+
+```python
+import shutil, os
+utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
+if not os.path.exists("src/ml_utils.py"):
+    os.makedirs("src", exist_ok=True)
+    shutil.copy2(utils_src, "src/ml_utils.py")
+
+from src.ml_utils import detect_column_types, build_preprocessor, safe_split, load_eda_report
+```
+
+Also check for prior EDA reports to inform preprocessing decisions:
+
+```python
+eda_report = load_eda_report()
+if eda_report:
+    print(f"Found EDA report: {eda_report['shape']['rows']} rows, {eda_report['shape']['cols']} cols")
+    print(f"Quality issues: {len(eda_report.get('quality_issues', []))}")
+    # Use this to inform imputation, scaling, and encoding choices
+```
+
 ### 1. Identify Column Types
 ```python
-numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
-
-# Remove target from feature lists
-if target_col in numerical_cols:
-    numerical_cols.remove(target_col)
-if target_col in categorical_cols:
-    categorical_cols.remove(target_col)
+# Use the reusable utility instead of manual detection
+col_types = detect_column_types(df, target_col=target_col)
+numerical_cols = col_types["numerical"]
+categorical_cols = col_types["categorical"]
 ```
 
 ### 2. Missing Value Strategy
@@ -63,22 +83,23 @@ scaler = StandardScaler()  # Most common choice
 
 ### 5. Build Complete Pipeline
 ```python
+# Quick version using reusable utility:
+preprocessor = build_preprocessor(numerical_cols, categorical_cols)
+
+# Or customize if EDA revealed specific needs:
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-# Numerical pipeline
 num_pipeline = Pipeline([
     ('imputer', SimpleImputer(strategy='median')),
     ('scaler', StandardScaler())
 ])
 
-# Categorical pipeline
 cat_pipeline = Pipeline([
     ('imputer', SimpleImputer(strategy='most_frequent')),
     ('encoder', OneHotEncoder(handle_unknown='ignore'))
 ])
 
-# Combine
 preprocessor = ColumnTransformer([
     ('num', num_pipeline, numerical_cols),
     ('cat', cat_pipeline, categorical_cols)

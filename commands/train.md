@@ -10,13 +10,28 @@ You are training a machine learning model following rigorous best practices.
 
 ## Training Workflow
 
+### 0. Initialize Reusable Utilities
+
+```python
+import shutil, os
+utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
+if not os.path.exists("src/ml_utils.py"):
+    os.makedirs("src", exist_ok=True)
+    shutil.copy2(utils_src, "src/ml_utils.py")
+
+from src.ml_utils import (
+    load_data, detect_column_types, build_preprocessor,
+    safe_split, evaluate_model, load_eda_report
+)
+```
+
 ### 1. Data Preparation
 - Load and validate the dataset
 - Separate features (X) from target (y)
 - **CRITICAL**: Split data BEFORE any preprocessing
   ```python
-  from sklearn.model_selection import train_test_split
-  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+  # Use the leakage-safe split utility:
+  X_train, X_test, y_train, y_test = safe_split(df, target_col=target_col)
   ```
 
 ### 2. Preprocessing Pipeline
