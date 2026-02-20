@@ -52,7 +52,7 @@ The `/deploy` command deploys applications to:
 **Steps:**
 ```bash
 # Build the Docker image
-cd /Users/maximolorenzoylosada/Documents/claude-code-test
+cd {Path}
 docker build -t ml-model:latest -f deploy/docker/Dockerfile .
 
 # Start services
