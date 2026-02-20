@@ -1,0 +1,107 @@
+# ML Automation Plugin for Claude Code
+
+End-to-end machine learning automation workflow for [Claude Code](https://claude.ai/claude-code). Takes you from raw data to deployed model with interactive dashboard — orchestrated by specialized AI agents.
+
+## What's Included
+
+### 10 Specialized Agents
+
+| Agent | Role |
+|-------|------|
+| `eda-analyst` | Exploratory data analysis on any dataset |
+| `ml-theory-advisor` | ML theory guidance, data leakage prevention |
+| `feature-engineering-analyst` | Feature design and opportunity discovery |
+| `mlops-engineer` | Model deployment, APIs, Docker, CI/CD |
+| `developer` | Code implementation on feature branches |
+| `brutal-code-reviewer` | Code quality and maintainability review |
+| `pr-approver` | Pull request review and merge |
+| `frontend-ux-analyst` | UI/UX design feedback |
+| `orchestrator` | Multi-agent coordination |
+| `assigner` | Automatic ticket routing |
+
+### Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/eda` | Run exploratory data analysis |
+| `/preprocess` | Build data processing pipeline (leakage-safe) |
+| `/train` | Train ML models with proper validation |
+| `/evaluate` | Comprehensive model evaluation with visualizations |
+| `/deploy` | Deploy to Docker, Snowflake, AWS, or GCP |
+| `/report` | Generate EDA, model, drift, or project reports |
+| `/test` | Generate and run tests (80% coverage threshold) |
+| `/team-coldstart` | Full pipeline: raw data to deployed dashboard |
+| `/team-analyze` | Quick multi-agent data analysis |
+| `/team-review` | Multi-agent code review |
+
+### Hooks
+
+- **Pre-commit**: Python syntax check, secrets detection, test coverage validation
+- **Pre-deploy**: Deployment readiness checks (files, health endpoints, Docker, env vars)
+- **Post-EDA**: Extract metrics, flag data quality issues
+- **Post-dashboard**: Validate Streamlit syntax, check components, generate run scripts
+- **Post-workflow**: Summarize outputs, generate quick-start commands
+
+## Installation
+
+```bash
+# Add the plugin
+claude plugin add maximolorenzoylosada/ml-automation-plugin
+```
+
+## Quick Start
+
+```bash
+# Full pipeline from raw data to deployed dashboard
+/team-coldstart data/sales.csv --target Revenue
+
+# Just explore a dataset
+/eda data/customers.csv
+
+# Quick multi-agent analysis
+/team-analyze data/survey.csv
+
+# Train a model
+/train
+
+# Deploy to Docker
+/deploy local
+```
+
+## How It Works
+
+The plugin provides a complete ML workflow where agents collaborate:
+
+```
+Raw Data → /eda → /preprocess → /train → /evaluate → /deploy
+              ↓         ↓           ↓          ↓
+         eda-analyst  ml-theory  ml-theory  mlops-engineer
+                      advisor    advisor
+```
+
+Or run the full pipeline with a single command:
+
+```
+/team-coldstart data.csv --target y
+```
+
+This orchestrates all stages automatically:
+1. Validates data and detects task type (ML vs analysis)
+2. Runs parallel EDA, leakage review, and feature analysis
+3. Builds preprocessing pipeline with leakage prevention
+4. Trains and compares models
+5. Generates comprehensive evaluation
+6. Creates interactive Streamlit dashboard
+7. Packages for production (FastAPI + Docker)
+8. Deploys to target environment
+
+## Requirements
+
+- [Claude Code](https://claude.ai/claude-code) CLI
+- Python 3.9+
+- Common ML libraries: pandas, scikit-learn, matplotlib, seaborn
+- Optional: streamlit, fastapi, docker
+
+## License
+
+MIT

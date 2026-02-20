@@ -1,0 +1,74 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f hooks/pre-commit.sh ]; then hooks/pre-commit.sh; fi",
+            "timeout": 30000,
+            "onError": "warn"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(docker-compose up:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f hooks/pre-deploy.sh ]; then hooks/pre-deploy.sh local; fi",
+            "timeout": 60000,
+            "onError": "stop"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write(*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[Hook] Python file written' && if command -v black &>/dev/null; then black --quiet \"$CLAUDE_TOOL_ARG_FILE_PATH\" 2>/dev/null || true; fi",
+            "timeout": 10000,
+            "onError": "ignore"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(dashboard/*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f hooks/post-dashboard.sh ]; then hooks/post-dashboard.sh \"$CLAUDE_TOOL_ARG_FILE_PATH\"; fi",
+            "timeout": 15000,
+            "onError": "warn"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude && echo \"$(date '+%Y-%m-%d %H:%M:%S') - Agent completed: $CLAUDE_TOOL_ARG_SUBAGENT_TYPE\" >> .claude/agent_activity.log",
+            "timeout": 5000,
+            "onError": "ignore"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(pytest:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[Hook] Tests completed' && mkdir -p .claude && echo \"$(date '+%Y-%m-%d %H:%M:%S') - Tests run\" >> .claude/workflow.log",
+            "timeout": 5000,
+            "onError": "ignore"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "ml-automation",
+  "version": "1.0.0",
+  "description": "End-to-end ML automation workflow for Claude Code. Includes 10 specialized agents (EDA, ML theory, MLOps, code review, etc.), slash commands for every stage of the ML lifecycle (EDA, preprocessing, training, evaluation, deployment, reporting), and hooks for quality gates.",
+  "author": {
+    "name": "Maximo Lorenzo y Losada"
+  },
+  "repository": "https://github.com/maximolorenzoylosada/ml-automation-plugin",
+  "license": "MIT",
+  "keywords": [
+    "ml",
+    "machine-learning",
+    "data-science",
+    "automation",
+    "agents",
+    "eda",
+    "mlops",
+    "deployment",
+    "streamlit",
+    "workflows"
+  ]
+}
