@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Simple frontmatter extraction
 const extractAndStripFrontmatter = (content) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { frontmatter: {}, content };
@@ -33,65 +32,43 @@ const extractAndStripFrontmatter = (content) => {
   return { frontmatter, content: body };
 };
 
-// Normalize a path: trim whitespace, expand ~, resolve to absolute
-const normalizePath = (p, homeDir) => {
-  if (!p || typeof p !== 'string') return null;
-  let normalized = p.trim();
-  if (!normalized) return null;
-  if (normalized.startsWith('~/')) {
-    normalized = path.join(homeDir, normalized.slice(2));
-  } else if (normalized === '~') {
-    normalized = homeDir;
-  }
-  return path.resolve(normalized);
-};
-
 export const MLAutomationPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
   const commandsDir = path.resolve(__dirname, '../../commands');
   const agentsDir = path.resolve(__dirname, '../../agents');
-  const envConfigDir = normalizePath(process.env.OPENCODE_CONFIG_DIR, homeDir);
-  const configDir = envConfigDir || path.join(homeDir, '.config/opencode');
+  const configDir = process.env.OPENCODE_CONFIG_DIR || path.join(homeDir, '.config/opencode');
 
-  // Build list of available skills from commands directory
-  const getSkillList = () => {
-    try {
-      const files = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
-      return files.map(f => {
-        const content = fs.readFileSync(path.join(commandsDir, f), 'utf8');
-        const { frontmatter } = extractAndStripFrontmatter(content);
-        return `- **ml-automation/${frontmatter.name || f.replace('.md', '')}**: ${frontmatter.description || 'No description'}`;
-      }).join('\n');
-    } catch {
-      return '(Could not list skills)';
-    }
-  };
+  // Build lists once at plugin load, not on every transform call
+  let skillList = '(Could not list skills)';
+  try {
+    const files = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
+    skillList = files.map(f => {
+      const content = fs.readFileSync(path.join(commandsDir, f), 'utf8');
+      const { frontmatter } = extractAndStripFrontmatter(content);
+      return `- **ml-automation/${frontmatter.name || f.replace('.md', '')}**: ${frontmatter.description || 'No description'}`;
+    }).join('\n');
+  } catch {}
 
-  // Build list of available agents
-  const getAgentList = () => {
-    try {
-      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
-      return files.map(f => {
-        const content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
-        const lines = content.split('\n');
-        const nameLine = lines.find(l => l.startsWith('# '));
-        return `- **${f.replace('.md', '')}**: ${nameLine ? nameLine.replace('# ', '') : f}`;
-      }).join('\n');
-    } catch {
-      return '(Could not list agents)';
-    }
-  };
+  let agentList = '(Could not list agents)';
+  try {
+    const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+    agentList = files.map(f => {
+      const content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+      const lines = content.split('\n');
+      const nameLine = lines.find(l => l.startsWith('# '));
+      return `- **${f.replace('.md', '')}**: ${nameLine ? nameLine.replace('# ', '') : f}`;
+    }).join('\n');
+  } catch {}
 
-  return {
-    'experimental.chat.system.transform': async (_input, output) => {
-      const bootstrap = `<ML_AUTOMATION_PLUGIN>
+  // Pre-build the bootstrap string once
+  const bootstrap = `<ML_AUTOMATION_PLUGIN>
 You have the ML Automation plugin installed.
 
 ## Available Skills (load with skill tool)
-${getSkillList()}
+${skillList}
 
 ## Available Agents
-${getAgentList()}
+${agentList}
 
 ## Tool Mapping for OpenCode
 When skills reference Claude Code tools, substitute OpenCode equivalents:
@@ -105,6 +82,8 @@ ML Automation skills are in \`${configDir}/skills/ml-automation/\`
 Use OpenCode's native \`skill\` tool to list and load skills.
 </ML_AUTOMATION_PLUGIN>`;
 
+  return {
+    'experimental.chat.system.transform': async (_input, output) => {
       (output.system ||= []).push(bootstrap);
     }
   };
