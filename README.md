@@ -49,7 +49,7 @@ Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 ### Claude Code
 
 ```bash
-claude plugin add maximolorenzoylosada/ml-automation-plugin
+claude plugin add maxilylm/ml-automation-plugin
 ```
 
 ### Cursor
