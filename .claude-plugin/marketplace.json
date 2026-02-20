@@ -13,7 +13,7 @@
   "plugins": [
     {
       "name": "ml-automation",
-      "source": ".",
+      "source": "./plugins/ml-automation",
       "description": "End-to-end ML automation workflow with 10 specialized agents, 10 slash commands, and 5 quality gate hooks.",
       "version": "1.0.0",
       "author": {
