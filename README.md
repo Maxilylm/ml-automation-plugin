@@ -56,14 +56,7 @@ Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 4. Select **"Install plugins"** and choose `ml-automation`
 5. Restart Claude Code
 
-**Option 2: Install directly from GitHub**
-
-1. Open Claude Code and run `/plugin`
-2. Select **"Install plugin"**
-3. Enter: `maxilylm/ml-automation-plugin`
-4. Restart Claude Code
-
-**Option 3: Local development**
+**Option 2: Local development**
 
 ```bash
 git clone https://github.com/maxilylm/ml-automation-plugin.git
