@@ -1,5 +1,5 @@
 ---
-name: Orchestrator
+name: orchestrator
 description: Coordinates work across multiple agents. Spawns Developer for features/fixes, PR Approver for reviews, and other specialists as needed.
 model: opus
 color: gold

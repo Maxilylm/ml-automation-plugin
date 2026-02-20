@@ -1,5 +1,5 @@
 ---
-name: Assigner
+name: assigner
 description: Automatically assigns unassigned tickets to the most appropriate agent based on the task description and agent capabilities.
 model: haiku
 color: orange

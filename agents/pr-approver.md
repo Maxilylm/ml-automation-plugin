@@ -1,5 +1,5 @@
 ---
-name: PR Approver
+name: pr-approver
 description: Reviews and merges pull requests created by other agents. Has special permissions to approve and merge PRs.
 model: opus
 color: purple
