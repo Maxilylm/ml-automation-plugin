@@ -70,13 +70,13 @@ Place the repo (or symlink it) where Cursor discovers plugins. The `.cursor-plug
 2. **Create the skills symlink:**
    ```bash
    mkdir -p ~/.agents/skills
-   ln -s ~/.codex/ml-automation/plugins/ml-automation/commands ~/.agents/skills/ml-automation
+   ln -s ~/.codex/ml-automation/commands ~/.agents/skills/ml-automation
    ```
 
    **Windows (PowerShell):**
    ```powershell
    New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
-   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\ml-automation" "$env:USERPROFILE\.codex\ml-automation\plugins\ml-automation\commands"
+   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\ml-automation" "$env:USERPROFILE\.codex\ml-automation\commands"
    ```
 
 3. **Restart Codex** to discover the skills.
@@ -97,7 +97,7 @@ Place the repo (or symlink it) where Cursor discovers plugins. The `.cursor-plug
 3. **Symlink skills:**
    ```bash
    mkdir -p ~/.config/opencode/skills
-   ln -s ~/.config/opencode/ml-automation/plugins/ml-automation/commands ~/.config/opencode/skills/ml-automation
+   ln -s ~/.config/opencode/ml-automation/commands ~/.config/opencode/skills/ml-automation
    ```
 
 4. **Restart OpenCode.** Verify by asking: "what ML automation skills do you have?"

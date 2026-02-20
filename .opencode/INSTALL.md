@@ -31,7 +31,7 @@ Create a symlink so OpenCode's native skill tool discovers ML automation skills:
 ```bash
 mkdir -p ~/.config/opencode/skills
 rm -rf ~/.config/opencode/skills/ml-automation
-ln -s ~/.config/opencode/ml-automation/plugins/ml-automation/commands ~/.config/opencode/skills/ml-automation
+ln -s ~/.config/opencode/ml-automation/commands ~/.config/opencode/skills/ml-automation
 ```
 
 ### 4. Restart OpenCode
@@ -91,7 +91,7 @@ git pull
 ### Skills not found
 
 1. Check skills symlink: `ls -l ~/.config/opencode/skills/ml-automation`
-2. Verify it points to: `~/.config/opencode/ml-automation/plugins/ml-automation/commands`
+2. Verify it points to: `~/.config/opencode/ml-automation/commands`
 3. Use `skill` tool to list what's discovered
 
 ### Tool Mapping

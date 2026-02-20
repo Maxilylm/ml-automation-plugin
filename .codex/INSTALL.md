@@ -17,13 +17,13 @@ Enable ML automation skills in Codex via native skill discovery. Clone and symli
 2. **Create the skills symlink:**
    ```bash
    mkdir -p ~/.agents/skills
-   ln -s ~/.codex/ml-automation/plugins/ml-automation/commands ~/.agents/skills/ml-automation
+   ln -s ~/.codex/ml-automation/commands ~/.agents/skills/ml-automation
    ```
 
    **Windows (PowerShell):**
    ```powershell
    New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
-   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\ml-automation" "$env:USERPROFILE\.codex\ml-automation\plugins\ml-automation\commands"
+   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\ml-automation" "$env:USERPROFILE\.codex\ml-automation\commands"
    ```
 
 3. **Restart Codex** to discover the skills.

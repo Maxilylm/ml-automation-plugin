@@ -18,5 +18,8 @@
     "deployment",
     "streamlit",
     "workflows"
-  ]
+  ],
+  "agents": "./agents/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json"
 }

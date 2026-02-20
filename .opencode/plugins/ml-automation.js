@@ -48,8 +48,8 @@ const normalizePath = (p, homeDir) => {
 
 export const MLAutomationPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
-  const commandsDir = path.resolve(__dirname, '../../plugins/ml-automation/commands');
-  const agentsDir = path.resolve(__dirname, '../../plugins/ml-automation/agents');
+  const commandsDir = path.resolve(__dirname, '../../commands');
+  const agentsDir = path.resolve(__dirname, '../../agents');
   const envConfigDir = normalizePath(process.env.OPENCODE_CONFIG_DIR, homeDir);
   const configDir = envConfigDir || path.join(homeDir, '.config/opencode');
 
