@@ -32,7 +32,7 @@ const extractAndStripFrontmatter = (content) => {
   return { frontmatter, content: body };
 };
 
-export const MLAutomationPlugin = async ({ client, directory }) => {
+const MLAutomationPlugin = async ({ project, client, $, directory, worktree }) => {
   const homeDir = os.homedir();
   const commandsDir = path.resolve(__dirname, '../../commands');
   const agentsDir = path.resolve(__dirname, '../../agents');
@@ -84,7 +84,9 @@ Use OpenCode's native \`skill\` tool to list and load skills.
 
   return {
     'experimental.chat.system.transform': async (_input, output) => {
-      (output.system ||= []).push(bootstrap);
+      output.system.push(bootstrap);
     }
   };
 };
+
+export default MLAutomationPlugin;
