@@ -48,8 +48,26 @@ Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 
 ### Claude Code
 
+**Option 1: Install from marketplace (recommended)**
+
+1. Open Claude Code and run `/plugin`
+2. Select **"Add marketplace"**
+3. Enter: `maxilylm/ml-automation-plugin`
+4. Select **"Install plugins"** and choose `ml-automation`
+5. Restart Claude Code
+
+**Option 2: Install directly from GitHub**
+
+1. Open Claude Code and run `/plugin`
+2. Select **"Install plugin"**
+3. Enter: `maxilylm/ml-automation-plugin`
+4. Restart Claude Code
+
+**Option 3: Local development**
+
 ```bash
-claude plugin add maxilylm/ml-automation-plugin
+git clone https://github.com/maxilylm/ml-automation-plugin.git
+claude --plugin-dir /path/to/ml-automation-plugin
 ```
 
 ### Cursor
@@ -152,7 +170,7 @@ This orchestrates all stages automatically:
 
 | Platform | Command |
 |----------|---------|
-| Claude Code | `claude plugin update ml-automation` |
+| Claude Code | Run `/plugin` → Update marketplace |
 | Codex | `cd ~/.codex/ml-automation && git pull` |
 | OpenCode | `cd ~/.config/opencode/ml-automation && git pull` |
 | Cursor | `cd <plugin-path> && git pull` |
