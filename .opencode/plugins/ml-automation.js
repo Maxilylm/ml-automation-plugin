@@ -1,25 +1,25 @@
 /**
  * ML Automation plugin for OpenCode.ai
  *
- * Injects ML automation bootstrap context via system prompt transform.
- * Skills are discovered via OpenCode's native skill tool from symlinked directory.
+ * Registers ML workflow tools (eda, train, deploy, etc.) and injects
+ * bootstrap context into the system prompt. Each tool reads its command
+ * markdown and returns it as instructions for the AI to follow.
  */
 
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { tool } from '@opencode-ai/plugin';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const extractAndStripFrontmatter = (content) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) return { frontmatter: {}, content };
-
+  if (!match) return { frontmatter: {}, body: content };
   const frontmatterStr = match[1];
   const body = match[2];
   const frontmatter = {};
-
   for (const line of frontmatterStr.split('\n')) {
     const colonIdx = line.indexOf(':');
     if (colonIdx > 0) {
@@ -28,28 +28,28 @@ const extractAndStripFrontmatter = (content) => {
       frontmatter[key] = value;
     }
   }
-
-  return { frontmatter, content: body };
+  return { frontmatter, body };
 };
 
 const MLAutomationPlugin = async ({ project, client, $, directory, worktree }) => {
   const homeDir = os.homedir();
   const commandsDir = path.resolve(__dirname, '../../commands');
   const agentsDir = path.resolve(__dirname, '../../agents');
-  const configDir = process.env.OPENCODE_CONFIG_DIR || path.join(homeDir, '.config/opencode');
 
-  // Build lists once at plugin load, not on every transform call
-  let skillList = '(Could not list skills)';
+  // Cache all command files at load time
+  const commands = {};
   try {
     const files = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
-    skillList = files.map(f => {
-      const content = fs.readFileSync(path.join(commandsDir, f), 'utf8');
-      const { frontmatter } = extractAndStripFrontmatter(content);
-      return `- **ml-automation/${frontmatter.name || f.replace('.md', '')}**: ${frontmatter.description || 'No description'}`;
-    }).join('\n');
+    for (const f of files) {
+      const raw = fs.readFileSync(path.join(commandsDir, f), 'utf8');
+      const { frontmatter, body } = extractAndStripFrontmatter(raw);
+      const name = frontmatter.name || f.replace('.md', '');
+      commands[name] = { description: frontmatter.description || '', body };
+    }
   } catch {}
 
-  let agentList = '(Could not list agents)';
+  // Cache agent list at load time
+  let agentList = '';
   try {
     const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
     agentList = files.map(f => {
@@ -60,32 +60,46 @@ const MLAutomationPlugin = async ({ project, client, $, directory, worktree }) =
     }).join('\n');
   } catch {}
 
-  // Pre-build the bootstrap string once
-  const bootstrap = `<ML_AUTOMATION_PLUGIN>
-You have the ML Automation plugin installed.
+  // Build tools from cached commands
+  const tools = {};
 
-## Available Skills (load with skill tool)
-${skillList}
+  for (const [name, cmd] of Object.entries(commands)) {
+    tools[`ml_${name.replace(/-/g, '_')}`] = tool({
+      description: cmd.description,
+      args: {
+        args: tool.schema.string().optional(),
+      },
+      async execute(input) {
+        const userArgs = input.args || '';
+        return [
+          `<ML_AUTOMATION_COMMAND name="${name}" args="${userArgs}">`,
+          cmd.body.trim(),
+          userArgs ? `\n## User Arguments\n${userArgs}` : '',
+          '</ML_AUTOMATION_COMMAND>',
+        ].join('\n');
+      },
+    });
+  }
+
+  // System prompt bootstrap
+  const toolNames = Object.keys(tools).map(t => `\`${t}\``).join(', ');
+  const bootstrap = `<ML_AUTOMATION_PLUGIN>
+You have the ML Automation plugin installed with these tools: ${toolNames}
 
 ## Available Agents
 ${agentList}
 
-## Tool Mapping for OpenCode
-When skills reference Claude Code tools, substitute OpenCode equivalents:
-- \`TodoWrite\` → \`update_plan\`
-- \`Task\` tool with subagents → Use OpenCode's subagent system (@mention)
-- \`Skill\` tool → OpenCode's native \`skill\` tool
-- \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → Your native tools
-
-## Skills Location
-ML Automation skills are in \`${configDir}/skills/ml-automation/\`
-Use OpenCode's native \`skill\` tool to list and load skills.
+## How to Use
+- Call any ml_* tool to get workflow instructions, then follow them
+- Pass dataset paths, targets, or flags via the \`args\` parameter
+- Examples: ml_eda(args: "sales.csv"), ml_train(args: "--target Revenue"), ml_deploy(args: "local")
 </ML_AUTOMATION_PLUGIN>`;
 
   return {
+    tool: tools,
     'experimental.chat.system.transform': async (_input, output) => {
       output.system.push(bootstrap);
-    }
+    },
   };
 };
 
