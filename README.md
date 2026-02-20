@@ -1,6 +1,8 @@
-# ML Automation Plugin for Claude Code
+# ML Automation Plugin
 
-End-to-end machine learning automation workflow for [Claude Code](https://claude.ai/claude-code). Takes you from raw data to deployed model with interactive dashboard — orchestrated by specialized AI agents.
+End-to-end machine learning automation workflow for AI coding assistants. Takes you from raw data to deployed model with interactive dashboard — orchestrated by specialized AI agents.
+
+Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 
 ## What's Included
 
@@ -19,20 +21,20 @@ End-to-end machine learning automation workflow for [Claude Code](https://claude
 | `orchestrator` | Multi-agent coordination |
 | `assigner` | Automatic ticket routing |
 
-### Slash Commands
+### Skills / Slash Commands
 
-| Command | Description |
-|---------|-------------|
-| `/eda` | Run exploratory data analysis |
-| `/preprocess` | Build data processing pipeline (leakage-safe) |
-| `/train` | Train ML models with proper validation |
-| `/evaluate` | Comprehensive model evaluation with visualizations |
-| `/deploy` | Deploy to Docker, Snowflake, AWS, or GCP |
-| `/report` | Generate EDA, model, drift, or project reports |
-| `/test` | Generate and run tests (80% coverage threshold) |
-| `/team-coldstart` | Full pipeline: raw data to deployed dashboard |
-| `/team-analyze` | Quick multi-agent data analysis |
-| `/team-review` | Multi-agent code review |
+| Skill | Description |
+|-------|-------------|
+| `eda` | Run exploratory data analysis |
+| `preprocess` | Build data processing pipeline (leakage-safe) |
+| `train` | Train ML models with proper validation |
+| `evaluate` | Comprehensive model evaluation with visualizations |
+| `deploy` | Deploy to Docker, Snowflake, AWS, or GCP |
+| `report` | Generate EDA, model, drift, or project reports |
+| `test` | Generate and run tests (80% coverage threshold) |
+| `team-coldstart` | Full pipeline: raw data to deployed dashboard |
+| `team-analyze` | Quick multi-agent data analysis |
+| `team-review` | Multi-agent code review |
 
 ### Hooks
 
@@ -44,10 +46,61 @@ End-to-end machine learning automation workflow for [Claude Code](https://claude
 
 ## Installation
 
+### Claude Code
+
 ```bash
-# Add the plugin
 claude plugin add maximolorenzoylosada/ml-automation-plugin
 ```
+
+### Cursor
+
+```bash
+git clone https://github.com/maxilylm/ml-automation-plugin.git
+```
+
+Place the repo (or symlink it) where Cursor discovers plugins. The `.cursor-plugin/plugin.json` manifest handles discovery automatically.
+
+### Codex
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/maxilylm/ml-automation-plugin.git ~/.codex/ml-automation
+   ```
+
+2. **Create the skills symlink:**
+   ```bash
+   mkdir -p ~/.agents/skills
+   ln -s ~/.codex/ml-automation/plugins/ml-automation/commands ~/.agents/skills/ml-automation
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
+   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\ml-automation" "$env:USERPROFILE\.codex\ml-automation\plugins\ml-automation\commands"
+   ```
+
+3. **Restart Codex** to discover the skills.
+
+### OpenCode
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/maxilylm/ml-automation-plugin.git ~/.config/opencode/ml-automation
+   ```
+
+2. **Register the plugin:**
+   ```bash
+   mkdir -p ~/.config/opencode/plugins
+   ln -s ~/.config/opencode/ml-automation/.opencode/plugins/ml-automation.js ~/.config/opencode/plugins/ml-automation.js
+   ```
+
+3. **Symlink skills:**
+   ```bash
+   mkdir -p ~/.config/opencode/skills
+   ln -s ~/.config/opencode/ml-automation/plugins/ml-automation/commands ~/.config/opencode/skills/ml-automation
+   ```
+
+4. **Restart OpenCode.** Verify by asking: "what ML automation skills do you have?"
 
 ## Quick Start
 
@@ -95,9 +148,19 @@ This orchestrates all stages automatically:
 7. Packages for production (FastAPI + Docker)
 8. Deploys to target environment
 
+## Updating
+
+| Platform | Command |
+|----------|---------|
+| Claude Code | `claude plugin update ml-automation` |
+| Codex | `cd ~/.codex/ml-automation && git pull` |
+| OpenCode | `cd ~/.config/opencode/ml-automation && git pull` |
+| Cursor | `cd <plugin-path> && git pull` |
+
+Skills update instantly through symlinks — no reinstall needed.
+
 ## Requirements
 
-- [Claude Code](https://claude.ai/claude-code) CLI
 - Python 3.9+
 - Common ML libraries: pandas, scikit-learn, matplotlib, seaborn
 - Optional: streamlit, fastapi, docker

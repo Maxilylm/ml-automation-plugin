@@ -1,5 +1,6 @@
 {
-  "PreToolUse": [
+  "hooks": {
+    "PreToolUse": [
     {
       "matcher": "Bash(git commit:*)",
       "hooks": [
@@ -69,4 +70,5 @@
       ]
     }
   ]
+  }
 }
