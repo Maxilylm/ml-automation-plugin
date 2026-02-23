@@ -411,6 +411,9 @@ def load_agent_reports(search_dirs=None):
     for d in search_dirs:
         pattern = os.path.join(d, "*_report.json")
         for filepath in globmod.glob(pattern):
+            # Skip reflection reports — they have their own loader
+            if "_reflection_" in os.path.basename(filepath):
+                continue
             try:
                 with open(filepath) as f:
                     report = json.load(f)
@@ -448,7 +451,7 @@ def get_workflow_status(search_dirs=None):
     insights = []
     for agent_name, report in reports.items():
         for rec in report.get("recommendations", []):
-            if rec.get("target_agent") and rec.get("target_agent") in completed_names:
+            if rec.get("target_agent") and rec.get("target_agent") not in completed_names:
                 insights.append({
                     "from": agent_name,
                     "to": rec["target_agent"],
@@ -494,7 +497,14 @@ def save_reflection_report(gate, report_data, output_dirs=None):
                 "corrections": report_data.get("corrections", []),
             },
         },
-        "recommendations": report_data.get("corrections", []),
+        "recommendations": [
+            {
+                "target_agent": c.get("target_agent", ""),
+                "action": c.get("recommendation", c.get("issue", "")),
+                "priority": c.get("priority", "medium"),
+            }
+            for c in report_data.get("corrections", [])
+        ],
         "next_steps": [],
         "artifacts": [],
         "depends_on": [],

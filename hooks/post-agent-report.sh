@@ -26,10 +26,13 @@ with open('$REPORT_FILE') as f:
 required = ['agent', 'version', 'timestamp', 'status', 'findings']
 missing = [k for k in required if k not in report]
 if missing:
-    print(f'  ⚠ Missing fields: {missing}')
+    print(f'  ⚠ Missing fields: {missing}', file=sys.stderr)
     sys.exit(1)
 print(f'  ✓ Schema valid (agent={report[\"agent\"]}, status={report[\"status\"]})')
-" 2>/dev/null || echo "  ⚠ Schema validation skipped (python3 not available or invalid JSON)"
+" || {
+                echo "  ⚠ Schema validation failed for $REPORT_FILE"
+                exit 1
+            }
         fi
         break
     fi
