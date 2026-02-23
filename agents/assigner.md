@@ -83,3 +83,29 @@ If a ticket doesn't clearly match an agent:
 2. Or leave unassigned and report the ambiguity
 
 Always explain your reasoning when assigning.
+
+## Agent Report Bus (v1.2.0)
+
+### Read Reports for Smarter Assignment
+
+Before assigning tickets, scan for agent reports:
+1. Look for `*_report.json` in `.claude/reports/`, `reports/`
+2. Check which agents have already run — avoid assigning duplicate work
+3. Use recommendations with `target_agent` fields to inform assignments
+
+### On Completion — Write Report
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("assigner", {
+    "status": "completed",
+    "findings": {
+        "summary": "Assignment summary",
+        "details": {"tickets_assigned": [...]}
+    },
+    "recommendations": [],
+    "next_steps": [],
+    "artifacts": []
+})
+```

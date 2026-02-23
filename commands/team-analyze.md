@@ -129,6 +129,8 @@ Output a structured report with findings and recommendations.
 3. Consider Name for title extraction
 ```
 
+After EDA completes, eda-analyst generates a data fingerprint stored in `.claude/mlops/data-versions/`.
+
 ### Step 3: Leakage Review (Invoke ml-theory-advisor)
 
 **Prompt for ml-theory-advisor:**
@@ -254,6 +256,8 @@ Provide specific, implementable recommendations.
 - Cabin (77% missing)
 ```
 
+After feature analysis completes, features are registered in `.claude/mlops/feature-store.json`.
+
 ### Step 5: Summary Report
 
 Compile findings into a comprehensive report:
@@ -298,15 +302,43 @@ Prioritized list of features to create.
 | `--visualize` | false | Generate visualization files |
 | `--output` | reports/ | Output directory for report |
 | `--format` | markdown | Report format (md, html, pdf) |
+| `--max-reflect` | 2 | Maximum reflection iterations (0 to skip) |
 
-## Agent Coordination
+## Agent Coordination (v1.2.0 — Report Bus)
 
-This skill coordinates:
-1. **eda-analyst** - Data exploration
-2. **ml-theory-advisor** - Leakage assessment
-3. **feature-engineering-analyst** - Feature recommendations
+This skill coordinates agents using the shared report bus:
 
-Agents run in parallel where possible for efficiency.
+1. **eda-analyst** - Data exploration (runs first, writes report to bus)
+2. **ml-theory-advisor** - Leakage assessment (runs in PARALLEL after EDA)
+3. **feature-engineering-analyst** - Feature recommendations (runs in PARALLEL after EDA)
+
+### Parallel Execution
+
+After EDA completes, spawn ml-theory-advisor AND feature-engineering-analyst concurrently using multiple Task tool calls in a single message. Both agents read the EDA report independently and write their own reports to the bus.
+
+Each agent should:
+- Read prior reports from `.claude/reports/` on startup
+- Write their report using `save_agent_report()` on completion
+
+### Status Check
+
+After all agents complete, display workflow status:
+```python
+from ml_utils import get_workflow_status
+status = get_workflow_status()
+print(f"Completed: {len(status['completed'])}, Pending: {len(status['pending'])}")
+for insight in status['insights']:
+    print(f"  {insight['from']} → {insight['to']}: {insight['action']}")
+```
+
+### Reflection Gate (v1.2.1)
+
+After the parallel analysis agents complete, run a reflection gate to validate the feature engineering output:
+
+1. Spawn ml-theory-advisor in reflection mode for `post-feature-engineering` gate
+2. If verdict is `revise`, re-spawn feature-engineering-analyst with the corrections from the reflection report
+3. Max iterations: configurable via `--max-reflect` (default: 2)
+4. If `--max-reflect 0`, skip the reflection gate entirely
 
 ## Output Files
 

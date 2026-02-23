@@ -4,6 +4,74 @@ End-to-end machine learning automation workflow for AI coding assistants. Takes 
 
 Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 
+## What's New in v1.2.0
+
+### Shared Report Bus
+All 10 agents now communicate through a shared JSON report system. Each agent reads prior reports on startup and writes its own report on completion, enabling:
+- Cross-agent insights and recommendations
+- Convention-based discovery (`*_report.json` files)
+- Multi-platform support (`.claude/reports/`, `.cursor/reports/`, etc.)
+
+### Parallel Agent Execution
+Workflow commands now spawn agents in parallel where dependencies allow:
+- **Post-EDA group**: feature-engineering-analyst + ml-theory-advisor + frontend-ux-analyst run concurrently
+- **Post-Training review group**: brutal-code-reviewer + ml-theory-advisor + frontend-ux-analyst run concurrently
+
+### `/status` Command
+New slash command for unified workflow visibility:
+```bash
+/status              # Show full workflow status
+/status --agent eda  # Show specific agent's report
+/status --pending    # Show only pending work
+```
+
+### Report Validation Hooks
+Automatic schema validation after each agent completes, ensuring reports are well-formed and discoverable.
+
+## What's New in v1.2.1
+
+### Reflection Gates
+
+Pre-execution validation gates that evaluate the *strategy* before the next workflow stage proceeds:
+
+- **Gate 1** (post-feature-engineering): Validates feature strategy, domain-specific transformations, leakage risk
+- **Gate 2** (post-preprocessing): Validates pipeline design, encoding choices, data flow
+- **Gate 3** (post-training): Validates model family, hyperparameter strategy, validation approach
+
+If issues are found, the upstream agent re-runs with corrections (max 2 iterations by default, configurable with `--max-reflect`).
+
+```bash
+# Use reflection gates (default)
+/team coldstart data.csv --target Revenue
+
+# Skip reflection gates
+/team coldstart data.csv --target Revenue --max-reflect 0
+
+# Allow more iterations
+/team coldstart data.csv --target Revenue --max-reflect 3
+```
+
+## What's New in v1.3.0
+
+### MLOps Registry Layer
+
+Convention-based MLOps registries — no external dependencies required:
+
+- **Model Registry**: Track trained models with metrics, lineage, rationale, and champion/challenger status
+- **Feature Store**: Catalog engineered features with transformations, statistics, and reusability metadata
+- **Experiment Tracking**: Log every training run with hyperparameters, metrics, and approach rationale
+- **Data Versioning**: Fingerprint datasets for reproducibility
+
+Task-type aware — adapts metrics and validation for classification, regression, MMM, segmentation, and time series.
+
+```bash
+# Inspect registries
+/registry                          # Summary of all registries
+/registry models --champion        # Show champion model details
+/registry features --domain mmm    # Filter features by domain
+/registry lineage model_id         # Trace full lineage
+```
+
 ## What's Included
 
 ### 10 Specialized Agents
@@ -35,6 +103,8 @@ Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 | `team-coldstart` | Full pipeline: raw data to deployed dashboard |
 | `team-analyze` | Quick multi-agent data analysis |
 | `team-review` | Multi-agent code review |
+| `status` | Show workflow status and agent reports |
+| `registry` | Inspect MLOps registries (models, features, experiments, data) |
 
 ### Hooks
 

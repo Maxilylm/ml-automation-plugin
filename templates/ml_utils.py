@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
 
 
 # =============================================================================
@@ -170,7 +169,7 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
     """
     from sklearn.metrics import (
         accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
-        mean_squared_error, mean_absolute_error, r2_score,
+        root_mean_squared_error, mean_absolute_error, r2_score,
     )
 
     y_pred = model.predict(X_test)
@@ -196,7 +195,7 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
             except Exception:
                 pass
     else:
-        metrics["rmse"] = mean_squared_error(y_test, y_pred, squared=False)
+        metrics["rmse"] = root_mean_squared_error(y_test, y_pred)
         metrics["mae"] = mean_absolute_error(y_test, y_pred)
         metrics["r2"] = r2_score(y_test, y_pred)
 
@@ -210,33 +209,55 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
 def save_eda_report(report_data, output_dir=".claude"):
     """
     Save structured EDA report as JSON for downstream agents.
-
-    Args:
-        report_data: dict with keys like 'shape', 'columns', 'dtypes',
-                     'missing', 'correlations', 'quality_issues', 'summary'
+    Also saves in the new agent report bus format for v1.2.0+ compatibility.
     """
     os.makedirs(output_dir, exist_ok=True)
     path = os.path.join(output_dir, "eda_report.json")
     with open(path, "w") as f:
         json.dump(report_data, f, indent=2, default=str)
+
+    bus_report = {
+        "status": "completed",
+        "findings": {
+            "summary": f"EDA completed: {report_data.get('shape', {}).get('rows', '?')} rows, {report_data.get('shape', {}).get('cols', '?')} columns",
+            "details": report_data,
+        },
+        "recommendations": [],
+        "next_steps": ["Run feature engineering", "Run ML theory review"],
+        "artifacts": [path],
+        "depends_on": [],
+        "enables": ["feature-engineering-analyst", "ml-theory-advisor", "frontend-ux-analyst"],
+    }
+    for issue in report_data.get("quality_issues", []):
+        bus_report["recommendations"].append({
+            "action": f"Address {issue.get('issue', 'unknown')} in column {issue.get('column', '?')}",
+            "priority": issue.get("severity", "medium"),
+            "target_agent": "feature-engineering-analyst",
+        })
+
+    save_agent_report("eda-analyst", bus_report)
     return path
 
 
 def load_eda_report(search_dirs=None):
     """
     Load prior EDA report if it exists.
-
-    Searches in .claude/eda_report.json and reports/eda_report.json.
-    Returns dict or None.
+    Checks both legacy .claude/eda_report.json and new bus format.
     """
     if search_dirs is None:
-        search_dirs = [".claude", "reports"]
+        search_dirs = [".claude", "reports", ".claude/reports", ".cursor/reports"]
 
     for d in search_dirs:
         path = os.path.join(d, "eda_report.json")
         if os.path.exists(path):
             with open(path) as f:
                 return json.load(f)
+
+    reports = load_agent_reports(search_dirs)
+    eda = reports.get("eda-analyst")
+    if eda:
+        return eda.get("findings", {}).get("details", eda.get("findings", {}))
+
     return None
 
 
@@ -322,3 +343,571 @@ def _detect_quality_issues(df, col_types):
             issues.append({"column": col, "issue": "majority_missing", "severity": "high", "pct": round(pct_missing * 100, 1)})
 
     return issues
+
+
+# =============================================================================
+# 7. AGENT REPORT BUS
+# =============================================================================
+
+REPORT_SCHEMA_VERSION = "1.2.0"
+
+PLATFORM_REPORT_DIRS = [".claude/reports", ".cursor/reports", ".codex/reports", ".opencode/reports", "reports"]
+
+
+def save_agent_report(agent_name, report_data, output_dirs=None):
+    """
+    Save a standardized agent report to all platform report directories.
+
+    Args:
+        agent_name: The agent identifier (e.g., 'eda-analyst')
+        report_data: Dict with keys: findings, recommendations, next_steps, artifacts
+        output_dirs: List of directories to write to (defaults to all platform dirs)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    report = {
+        "agent": agent_name,
+        "version": REPORT_SCHEMA_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": report_data.get("status", "completed"),
+        "findings": report_data.get("findings", {}),
+        "recommendations": report_data.get("recommendations", []),
+        "next_steps": report_data.get("next_steps", []),
+        "artifacts": report_data.get("artifacts", []),
+        "depends_on": report_data.get("depends_on", []),
+        "enables": report_data.get("enables", []),
+    }
+
+    filename = f"{agent_name}_report.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(report, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_agent_reports(search_dirs=None):
+    """
+    Load all agent reports from report directories.
+
+    Returns:
+        dict of agent_name -> report_dict (most recent per agent)
+    """
+    import glob as globmod
+
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    reports = {}
+    for d in search_dirs:
+        pattern = os.path.join(d, "*_report.json")
+        for filepath in globmod.glob(pattern):
+            # Skip reflection reports — they have their own loader
+            if "_reflection_" in os.path.basename(filepath):
+                continue
+            try:
+                with open(filepath) as f:
+                    report = json.load(f)
+                agent = report.get("agent", os.path.basename(filepath).replace("_report.json", ""))
+                if agent not in reports or report.get("timestamp", "") > reports[agent].get("timestamp", ""):
+                    reports[agent] = report
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return reports
+
+
+def get_workflow_status(search_dirs=None):
+    """
+    Get a summary of workflow status from agent reports.
+
+    Returns:
+        dict with keys: completed (list), pending (list), insights (list)
+    """
+    reports = load_agent_reports(search_dirs)
+
+    workflow_agents = [
+        "eda-analyst", "feature-engineering-analyst", "ml-theory-advisor",
+        "frontend-ux-analyst", "developer", "brutal-code-reviewer",
+        "pr-approver", "mlops-engineer", "orchestrator", "assigner",
+    ]
+
+    completed = []
+    for agent_name, report in reports.items():
+        summary = report.get("findings", {}).get("summary", "No summary")
+        completed.append({"agent": agent_name, "summary": summary, "timestamp": report.get("timestamp", "")})
+
+    completed_names = set(reports.keys())
+    pending = [a for a in workflow_agents if a not in completed_names]
+
+    insights = []
+    for agent_name, report in reports.items():
+        for rec in report.get("recommendations", []):
+            if rec.get("target_agent") and rec.get("target_agent") not in completed_names:
+                insights.append({
+                    "from": agent_name,
+                    "to": rec["target_agent"],
+                    "action": rec.get("action", ""),
+                    "priority": rec.get("priority", "medium"),
+                })
+
+    return {"completed": completed, "pending": pending, "insights": insights}
+
+
+# =============================================================================
+# 8. REFLECTION REPORTS
+# =============================================================================
+
+REFLECTION_GATES = ["post-feature-engineering", "post-preprocessing", "post-training"]
+
+
+def save_reflection_report(gate, report_data, output_dirs=None):
+    """
+    Save a reflection gate report from ml-theory-advisor.
+
+    Args:
+        gate: One of 'post-feature-engineering', 'post-preprocessing', 'post-training'
+        report_data: Dict with keys: verdict, reasoning, corrections
+        output_dirs: List of directories (defaults to PLATFORM_REPORT_DIRS)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    report = {
+        "agent": "ml-theory-advisor",
+        "version": REPORT_SCHEMA_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "completed",
+        "findings": {
+            "summary": f"Reflection gate: {gate}",
+            "details": {
+                "gate": gate,
+                "verdict": report_data.get("verdict", "approved"),
+                "reasoning": report_data.get("reasoning", ""),
+                "corrections": report_data.get("corrections", []),
+            },
+        },
+        "recommendations": [
+            {
+                "target_agent": c.get("target_agent", ""),
+                "action": c.get("recommendation", c.get("issue", "")),
+                "priority": c.get("priority", "medium"),
+            }
+            for c in report_data.get("corrections", [])
+        ],
+        "next_steps": [],
+        "artifacts": [],
+        "depends_on": [],
+        "enables": [],
+    }
+
+    filename = f"ml-theory-advisor_reflection_{gate}_report.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(report, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_reflection_report(gate, search_dirs=None):
+    """
+    Load the most recent reflection report for a specific gate.
+
+    Args:
+        gate: One of 'post-feature-engineering', 'post-preprocessing', 'post-training'
+        search_dirs: Directories to search (defaults to PLATFORM_REPORT_DIRS)
+
+    Returns:
+        dict with verdict, reasoning, corrections — or None if not found
+    """
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    filename = f"ml-theory-advisor_reflection_{gate}_report.json"
+    latest = None
+
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    report = json.load(f)
+                if latest is None or report.get("timestamp", "") > latest.get("timestamp", ""):
+                    latest = report
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    if latest:
+        return latest.get("findings", {}).get("details", {})
+    return None
+
+
+# =============================================================================
+# 9. MLOPS REGISTRY
+# =============================================================================
+
+PLATFORM_MLOPS_DIRS = [
+    ".claude/mlops",
+    ".cursor/mlops",
+    ".codex/mlops",
+    ".opencode/mlops",
+    "mlops",
+]
+
+MLOPS_SCHEMA_VERSION = "1.0"
+
+# Task-type specific required metrics
+TASK_TYPE_METRICS = {
+    "classification": ["accuracy", "precision", "recall", "f1", "auc_roc"],
+    "regression": ["rmse", "mae", "r2"],
+    "mmm": ["r2", "mape", "channel_roi", "channel_contribution"],
+    "segmentation": ["silhouette_score", "n_clusters"],
+    "time_series": ["rmse", "mae", "mape"],
+}
+
+
+def _load_registry(filename, search_dirs=None):
+    """Load a registry JSON file, returning the most recently modified version."""
+    if search_dirs is None:
+        search_dirs = PLATFORM_MLOPS_DIRS
+
+    latest = None
+    latest_mtime = 0
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                mtime = os.path.getmtime(path)
+                with open(path) as f:
+                    data = json.load(f)
+                if mtime > latest_mtime:
+                    latest = data
+                    latest_mtime = mtime
+            except (json.JSONDecodeError, KeyError, OSError):
+                continue
+    return latest
+
+
+def _save_registry(filename, data, output_dirs=None):
+    """Save a registry JSON file to all platform directories."""
+    if output_dirs is None:
+        output_dirs = PLATFORM_MLOPS_DIRS
+
+    paths_written = []
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
+        paths_written.append(path)
+    return paths_written
+
+
+# --- Model Registry ---
+
+def save_model_entry(model_entry, output_dirs=None):
+    """
+    Register a trained model in the model registry.
+
+    Args:
+        model_entry: Dict with keys: model_id, name, task_type, algorithm,
+            framework, metrics, hyperparameters, artifact_path,
+            data_fingerprint, feature_set, training_experiment_id,
+            rationale, tags, status (default: 'challenger')
+    """
+    from datetime import datetime, timezone
+
+    registry = _load_registry("model-registry.json", output_dirs) or {
+        "version": MLOPS_SCHEMA_VERSION,
+        "models": [],
+    }
+
+    entry = {
+        "model_id": model_entry.get("model_id", f"model_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"),
+        "name": model_entry.get("name", "unnamed_model"),
+        "task_type": model_entry.get("task_type", "regression"),
+        "algorithm": model_entry.get("algorithm", ""),
+        "framework": model_entry.get("framework", "scikit-learn"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": model_entry.get("status", "challenger"),
+        "metrics": model_entry.get("metrics", {}),
+        "hyperparameters": model_entry.get("hyperparameters", {}),
+        "artifact_path": model_entry.get("artifact_path", ""),
+        "data_fingerprint": model_entry.get("data_fingerprint", ""),
+        "feature_set": model_entry.get("feature_set", []),
+        "training_experiment_id": model_entry.get("training_experiment_id", ""),
+        "predecessor_id": model_entry.get("predecessor_id"),
+        "rationale": model_entry.get("rationale", {}),
+        "tags": model_entry.get("tags", []),
+    }
+
+    # Deduplicate: update existing entry if model_id already registered
+    existing_idx = next((i for i, m in enumerate(registry["models"]) if m.get("model_id") == entry["model_id"]), None)
+    if existing_idx is not None:
+        registry["models"][existing_idx] = entry
+    else:
+        registry["models"].append(entry)
+    return _save_registry("model-registry.json", registry, output_dirs)
+
+
+def load_model_registry(search_dirs=None):
+    """Load the model registry. Returns dict with 'models' list or None."""
+    return _load_registry("model-registry.json", search_dirs)
+
+
+def get_champion_model(search_dirs=None):
+    """Get the current champion model, or None."""
+    registry = load_model_registry(search_dirs)
+    if not registry:
+        return None
+    for model in registry.get("models", []):
+        if model.get("status") == "champion":
+            return model
+    return None
+
+
+def promote_model(model_id, search_dirs=None, output_dirs=None):
+    """Promote a model to champion, archiving the current champion."""
+    registry = _load_registry("model-registry.json", search_dirs) or {"version": MLOPS_SCHEMA_VERSION, "models": []}
+
+    # Verify target model exists before archiving current champion
+    if not any(m.get("model_id") == model_id for m in registry["models"]):
+        return []
+
+    for model in registry["models"]:
+        if model["model_id"] == model_id:
+            model["status"] = "champion"
+        elif model.get("status") == "champion":
+            model["status"] = "archived"
+
+    return _save_registry("model-registry.json", registry, output_dirs)
+
+
+# --- Feature Store ---
+
+def save_feature_entries(features, output_dirs=None):
+    """
+    Register features in the feature store.
+
+    Args:
+        features: List of dicts, each with keys: feature_id, name, description,
+            dtype, source_columns, transformation, transformation_params,
+            created_by, domain, task_type_relevance, tags, statistics, leakage_risk
+    """
+    from datetime import datetime, timezone
+
+    store = _load_registry("feature-store.json", output_dirs) or {
+        "version": MLOPS_SCHEMA_VERSION,
+        "features": [],
+    }
+
+    existing_ids = {f.get("feature_id") for f in store["features"]}
+    now = datetime.now(timezone.utc).isoformat()
+
+    for feat in features:
+        fid = feat.get("feature_id", feat.get("name", "unknown"))
+        if fid in existing_ids:
+            # Update existing feature
+            for i, existing in enumerate(store["features"]):
+                if existing["feature_id"] == fid:
+                    store["features"][i].update(feat)
+                    store["features"][i]["updated_at"] = now
+                    break
+        else:
+            entry = {
+                "feature_id": fid,
+                "name": feat.get("name", fid),
+                "description": feat.get("description", ""),
+                "dtype": feat.get("dtype", "unknown"),
+                "source_columns": feat.get("source_columns", []),
+                "transformation": feat.get("transformation", "raw"),
+                "transformation_params": feat.get("transformation_params", {}),
+                "created_at": now,
+                "created_by": feat.get("created_by", "feature-engineering-analyst"),
+                "domain": feat.get("domain", "general"),
+                "task_type_relevance": feat.get("task_type_relevance", []),
+                "tags": feat.get("tags", []),
+                "statistics": feat.get("statistics", {}),
+                "used_in_models": feat.get("used_in_models", []),
+                "leakage_risk": feat.get("leakage_risk", "unknown"),
+            }
+            store["features"].append(entry)
+            existing_ids.add(fid)  # track within batch to prevent duplicates
+
+    return _save_registry("feature-store.json", store, output_dirs)
+
+
+def load_feature_store(search_dirs=None):
+    """Load the feature store. Returns dict with 'features' list or None."""
+    return _load_registry("feature-store.json", search_dirs)
+
+
+# --- Experiment Tracking ---
+
+def save_experiment(experiment_data, output_dirs=None):
+    """
+    Save an experiment log for a training run.
+
+    Args:
+        experiment_data: Dict with keys: experiment_id, name, task_type,
+            rationale, dataset, model, metrics, artifacts, notes
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_MLOPS_DIRS
+
+    now = datetime.now(timezone.utc).isoformat()
+    exp_id = experiment_data.get("experiment_id", f"exp_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}")
+
+    experiment = {
+        "experiment_id": exp_id,
+        "name": experiment_data.get("name", "unnamed_experiment"),
+        "created_at": now,
+        "status": experiment_data.get("status", "completed"),
+        "task_type": experiment_data.get("task_type", "regression"),
+        "rationale": experiment_data.get("rationale", {}),
+        "dataset": experiment_data.get("dataset", {}),
+        "model": experiment_data.get("model", {}),
+        "metrics": experiment_data.get("metrics", {}),
+        "artifacts": experiment_data.get("artifacts", []),
+        "notes": experiment_data.get("notes", ""),
+        "registered_model_id": experiment_data.get("registered_model_id", ""),
+    }
+
+    filename = f"experiments/{exp_id}.json"
+    paths_written = []
+    for d in output_dirs:
+        exp_dir = os.path.join(d, "experiments")
+        os.makedirs(exp_dir, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(experiment, f, indent=2, default=str)
+        paths_written.append(path)
+    return paths_written
+
+
+def load_experiments(search_dirs=None):
+    """Load all experiment logs. Returns list of experiment dicts."""
+    import glob as globmod
+
+    if search_dirs is None:
+        search_dirs = PLATFORM_MLOPS_DIRS
+
+    experiments = {}
+    for d in search_dirs:
+        pattern = os.path.join(d, "experiments", "*.json")
+        for filepath in globmod.glob(pattern):
+            try:
+                with open(filepath) as f:
+                    exp = json.load(f)
+                exp_id = exp.get("experiment_id", os.path.basename(filepath))
+                if exp_id not in experiments:
+                    experiments[exp_id] = exp
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return list(experiments.values())
+
+
+# --- Data Versioning ---
+
+def save_data_version(data_version, output_dirs=None):
+    """
+    Save a data version fingerprint.
+
+    Args:
+        data_version: Dict with keys: fingerprint, source_path, rows, columns,
+            column_schema, statistics_hash, detected_task_type
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_MLOPS_DIRS
+
+    now = datetime.now(timezone.utc).isoformat()
+    fingerprint = data_version.get("fingerprint", "unknown")
+    short_fp = fingerprint.replace("sha256:", "")[:12]
+
+    version = {
+        "fingerprint": fingerprint,
+        "created_at": now,
+        "source_path": data_version.get("source_path", ""),
+        "rows": data_version.get("rows", 0),
+        "columns": data_version.get("columns", 0),
+        "column_schema": data_version.get("column_schema", {}),
+        "statistics_hash": data_version.get("statistics_hash", ""),
+        "detected_task_type": data_version.get("detected_task_type", "unknown"),
+        "used_in_experiments": data_version.get("used_in_experiments", []),
+    }
+
+    filename = f"data-versions/{short_fp}.json"
+    paths_written = []
+    for d in output_dirs:
+        dv_dir = os.path.join(d, "data-versions")
+        os.makedirs(dv_dir, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(version, f, indent=2, default=str)
+        paths_written.append(path)
+    return paths_written
+
+
+def compute_data_fingerprint(df):
+    """
+    Compute a SHA-256 fingerprint for a DataFrame.
+
+    Uses sorted column names, dtypes, row count, and a sample hash.
+    """
+    import hashlib
+
+    parts = []
+    parts.append(str(sorted(df.columns.tolist())))
+    parts.append(str([str(df[c].dtype) for c in sorted(df.columns)]))
+    parts.append(str(len(df)))
+
+    # Sample first and last rows for content identity
+    sample_size = min(100, len(df))
+    if len(df) > 0:
+        head = df.head(sample_size).to_csv(index=False)
+        tail = df.tail(sample_size).to_csv(index=False)
+        parts.append(head)
+        parts.append(tail)
+
+    content = "|".join(parts)
+    return f"sha256:{hashlib.sha256(content.encode()).hexdigest()}"
+
+
+def load_data_versions(search_dirs=None):
+    """Load all data version fingerprints. Returns list of version dicts."""
+    import glob as globmod
+
+    if search_dirs is None:
+        search_dirs = PLATFORM_MLOPS_DIRS
+
+    versions = {}
+    for d in search_dirs:
+        pattern = os.path.join(d, "data-versions", "*.json")
+        for filepath in globmod.glob(pattern):
+            try:
+                with open(filepath) as f:
+                    ver = json.load(f)
+                fp = ver.get("fingerprint", os.path.basename(filepath))
+                if fp not in versions:
+                    versions[fp] = ver
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return list(versions.values())

@@ -85,6 +85,83 @@ You have access to:
 
 **Always output the PR URL** when creating a PR so the system can trigger PR review.
 
+## Experiment Tracking (v1.3.0)
+
+When training a model, log the experiment for reproducibility and comparison:
+
+```python
+from ml_utils import save_experiment
+
+save_experiment({
+    "experiment_id": "exp_20260223_143022",
+    "name": "revenue_model_rf_v2",
+    "task_type": "regression",  # classification | regression | mmm | segmentation | time_series
+    "rationale": {
+        "approach_reason": "EDA showed non-linear media spend relationships",
+        "feature_selection_reason": "Adstock features critical for MMM per feature-engineering-analyst",
+        "theory_advisor_verdict": "approved"
+    },
+    "dataset": {
+        "fingerprint": "sha256:abc123...",  # from eda-analyst report
+        "rows": 5200,
+        "features_used": 12,
+        "target": "Revenue",
+        "split": {"train": 0.7, "val": 0.15, "test": 0.15}
+    },
+    "model": {
+        "algorithm": "RandomForestRegressor",
+        "framework": "scikit-learn",
+        "hyperparameters": {"n_estimators": 200, "max_depth": 12}
+    },
+    "metrics": {
+        "train": {"rmse": 980.2, "r2": 0.92},
+        "val": {"rmse": 1180.5, "r2": 0.88},
+        "test": {"rmse": 1245.3, "r2": 0.87}
+    },
+    "artifacts": [
+        {"type": "model", "path": "models/revenue_predictor.joblib"},
+        {"type": "preprocessor", "path": "models/preprocessor.joblib"}
+    ],
+})
+```
+
+Read prior agent reports from `.claude/reports/` to populate `rationale` fields — capture WHY this approach was chosen, not just what was trained.
+
+If `ml_utils.py` is not available, write JSON directly to `.claude/mlops/experiments/`.
+
+## Agent Report Bus (v1.2.0)
+
+### On Startup — Read Relevant Reports
+
+Before implementing, check for agent reports that provide context:
+1. Scan `.claude/reports/` and `reports/` for `*_report.json` files
+2. Read reports from analysis agents (EDA, feature engineering, ML theory) for implementation guidance
+3. Follow their recommendations when implementing features
+
+### On Completion — Write Report
+
+After creating your PR, write a report:
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("developer", {
+    "status": "completed",
+    "findings": {
+        "summary": "Brief description of what was implemented",
+        "details": {"files_changed": [...], "pr_number": N}
+    },
+    "recommendations": [
+        {"action": "Review PR #N", "priority": "high", "target_agent": "pr-approver"}
+    ],
+    "next_steps": ["Code review", "Merge PR"],
+    "artifacts": ["src/..."],
+    "depends_on": ["feature-engineering-analyst", "ml-theory-advisor"]
+})
+```
+
+If `ml_utils.py` is not available, write JSON directly to the report directories.
+
 ## When Stuck
 
 If you encounter issues:

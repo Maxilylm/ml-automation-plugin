@@ -129,3 +129,55 @@ Adapt your analysis based on context:
 - Outliers that might be errors vs. legitimate extreme values
 
 You approach every dataset with curiosity and rigor, treating EDA as the foundation for all downstream analysis and decision-making.
+
+## Data Versioning (v1.3.0)
+
+After loading the dataset, generate a data fingerprint for reproducibility:
+
+```python
+from ml_utils import compute_data_fingerprint, save_data_version
+
+fingerprint = compute_data_fingerprint(df)
+
+save_data_version({
+    "fingerprint": fingerprint,
+    "source_path": "data/sales.csv",  # actual path used
+    "rows": len(df),
+    "columns": len(df.columns),
+    "column_schema": {
+        col: {"dtype": str(df[col].dtype), "null_pct": round(df[col].isnull().mean(), 4)}
+        for col in df.columns
+    },
+    "detected_task_type": "regression",  # based on your EDA findings
+})
+```
+
+Include the fingerprint in your agent report so downstream agents can reference it.
+
+If `ml_utils.py` is not available, compute a SHA-256 hash of column names + dtypes + row count manually and save to `.claude/mlops/data-versions/`.
+
+## Agent Report Bus (v1.2.0)
+
+### On Completion — Write Report
+
+When you complete your analysis, write a structured JSON report for downstream agents:
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("eda-analyst", {
+    "status": "completed",
+    "findings": {
+        "summary": "Brief narrative of EDA findings",
+        "details": {"shape": {"rows": N, "cols": M}, "quality_issues": [...], "key_patterns": [...]}
+    },
+    "recommendations": [
+        {"action": "description", "priority": "high|medium|low", "target_agent": "feature-engineering-analyst"}
+    ],
+    "next_steps": ["Run feature engineering", "Run ML theory review"],
+    "artifacts": ["reports/eda_report.md"],
+    "enables": ["feature-engineering-analyst", "ml-theory-advisor", "frontend-ux-analyst"]
+})
+```
+
+If `ml_utils.py` is not available, write JSON directly to `.claude/reports/eda-analyst_report.json` and `reports/eda-analyst_report.json`.

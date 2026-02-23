@@ -42,6 +42,9 @@ Enable ML automation skills in Codex via native skill discovery. Clone and symli
 | `ml-automation/team-coldstart` | Full pipeline: raw data to deployed dashboard |
 | `ml-automation/team-analyze` | Quick multi-agent data analysis |
 | `ml-automation/team-review` | Multi-agent code review |
+| `ml-automation/status` | View workflow progress, agent states, and report bus contents |
+
+> **New in v1.2.0:** The `/status` command provides real-time visibility into workflow execution, including agent states, parallel group progress, and shared report bus contents.
 
 ## Tool Mapping
 

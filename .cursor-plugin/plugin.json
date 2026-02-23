@@ -1,14 +1,14 @@
 {
   "name": "ml-automation",
-  "description": "End-to-end ML automation workflow: 10 specialized agents, slash commands for every ML lifecycle stage, and quality gate hooks",
-  "version": "1.1.0",
+  "description": "End-to-end ML automation workflow: 10 specialized agents with shared report bus, reflection gates, MLOps registry layer, parallel execution groups, /status and /registry commands, and quality gate hooks",
+  "version": "1.3.0",
   "author": {
     "name": "Maximo Lorenzo y Losada"
   },
   "homepage": "https://github.com/maxilylm/ml-automation-plugin",
   "repository": "https://github.com/maxilylm/ml-automation-plugin",
   "license": "MIT",
-  "keywords": ["ml", "machine-learning", "data-science", "automation", "agents", "eda", "mlops", "deployment", "workflows"],
+  "keywords": ["ml", "machine-learning", "data-science", "automation", "agents", "eda", "mlops", "deployment", "workflows", "report-bus", "parallel-agents"],
   "skills": "./skills/",
   "agents": "./agents/",
   "commands": "./commands/",
