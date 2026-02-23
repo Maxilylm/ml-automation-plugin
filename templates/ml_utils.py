@@ -457,3 +457,91 @@ def get_workflow_status(search_dirs=None):
                 })
 
     return {"completed": completed, "pending": pending, "insights": insights}
+
+
+# =============================================================================
+# 8. REFLECTION REPORTS
+# =============================================================================
+
+REFLECTION_GATES = ["post-feature-engineering", "post-preprocessing", "post-training"]
+
+
+def save_reflection_report(gate, report_data, output_dirs=None):
+    """
+    Save a reflection gate report from ml-theory-advisor.
+
+    Args:
+        gate: One of 'post-feature-engineering', 'post-preprocessing', 'post-training'
+        report_data: Dict with keys: verdict, reasoning, corrections
+        output_dirs: List of directories (defaults to PLATFORM_REPORT_DIRS)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    report = {
+        "agent": "ml-theory-advisor",
+        "version": REPORT_SCHEMA_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "completed",
+        "findings": {
+            "summary": f"Reflection gate: {gate}",
+            "details": {
+                "gate": gate,
+                "verdict": report_data.get("verdict", "approved"),
+                "reasoning": report_data.get("reasoning", ""),
+                "corrections": report_data.get("corrections", []),
+            },
+        },
+        "recommendations": report_data.get("corrections", []),
+        "next_steps": [],
+        "artifacts": [],
+        "depends_on": [],
+        "enables": [],
+    }
+
+    filename = f"ml-theory-advisor_reflection_{gate}_report.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(report, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_reflection_report(gate, search_dirs=None):
+    """
+    Load the most recent reflection report for a specific gate.
+
+    Args:
+        gate: One of 'post-feature-engineering', 'post-preprocessing', 'post-training'
+        search_dirs: Directories to search (defaults to PLATFORM_REPORT_DIRS)
+
+    Returns:
+        dict with verdict, reasoning, corrections — or None if not found
+    """
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    filename = f"ml-theory-advisor_reflection_{gate}_report.json"
+    latest = None
+
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    report = json.load(f)
+                if latest is None or report.get("timestamp", "") > latest.get("timestamp", ""):
+                    latest = report
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    if latest:
+        return latest.get("findings", {}).get("details", {})
+    return None
