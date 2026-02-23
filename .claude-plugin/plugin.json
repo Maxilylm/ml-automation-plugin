@@ -1,7 +1,7 @@
 {
   "name": "ml-automation",
-  "version": "1.2.0",
-  "description": "End-to-end ML automation workflow for Claude Code. Includes 10 specialized agents with shared report bus for inter-agent communication, parallel execution groups, /status command for workflow visibility, reusable ML utilities, and hooks for quality gates. v1.2: Shared Report Bus, parallel agent groups, /status command.",
+  "version": "1.2.1",
+  "description": "End-to-end ML automation workflow for Claude Code. Includes 10 specialized agents with shared report bus for inter-agent communication, parallel execution groups, /status command for workflow visibility, reusable ML utilities, and hooks for quality gates. v1.2.1: Reflection gates for pre-execution validation.",
   "author": {
     "name": "Maximo Lorenzo y Losada"
   },

@@ -28,6 +28,29 @@ New slash command for unified workflow visibility:
 ### Report Validation Hooks
 Automatic schema validation after each agent completes, ensuring reports are well-formed and discoverable.
 
+## What's New in v1.2.1
+
+### Reflection Gates
+
+Pre-execution validation gates that evaluate the *strategy* before the next workflow stage proceeds:
+
+- **Gate 1** (post-feature-engineering): Validates feature strategy, domain-specific transformations, leakage risk
+- **Gate 2** (post-preprocessing): Validates pipeline design, encoding choices, data flow
+- **Gate 3** (post-training): Validates model family, hyperparameter strategy, validation approach
+
+If issues are found, the upstream agent re-runs with corrections (max 2 iterations by default, configurable with `--max-reflect`).
+
+```bash
+# Use reflection gates (default)
+/team coldstart data.csv --target Revenue
+
+# Skip reflection gates
+/team coldstart data.csv --target Revenue --max-reflect 0
+
+# Allow more iterations
+/team coldstart data.csv --target Revenue --max-reflect 3
+```
+
 ## What's Included
 
 ### 10 Specialized Agents
