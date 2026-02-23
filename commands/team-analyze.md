@@ -298,6 +298,7 @@ Prioritized list of features to create.
 | `--visualize` | false | Generate visualization files |
 | `--output` | reports/ | Output directory for report |
 | `--format` | markdown | Report format (md, html, pdf) |
+| `--max-reflect` | 2 | Maximum reflection iterations (0 to skip) |
 
 ## Agent Coordination (v1.2.0 — Report Bus)
 
@@ -325,6 +326,15 @@ print(f"Completed: {len(status['completed'])}, Pending: {len(status['pending'])}
 for insight in status['insights']:
     print(f"  {insight['from']} → {insight['to']}: {insight['action']}")
 ```
+
+### Reflection Gate (v1.2.1)
+
+After the parallel analysis agents complete, run a reflection gate to validate the feature engineering output:
+
+1. Spawn ml-theory-advisor in reflection mode for `post-feature-engineering` gate
+2. If verdict is `revise`, re-spawn feature-engineering-analyst with the corrections from the reflection report
+3. Max iterations: configurable via `--max-reflect` (default: 2)
+4. If `--max-reflect 0`, skip the reflection gate entirely
 
 ## Output Files
 

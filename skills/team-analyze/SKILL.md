@@ -23,3 +23,7 @@ description: Run a quick analysis workflow on any dataset. Performs EDA, quality
 All agents write structured reports to the shared report bus. After EDA completes, spawn ml-theory-advisor and feature-engineering-analyst in parallel — they both read the EDA report independently.
 
 Use `ml_utils.get_workflow_status()` after all agents complete to display a unified summary.
+
+## Reflection Gate (v1.2.1)
+
+After parallel analysis completes, a reflection gate validates feature engineering output before the summary report. The ml-theory-advisor evaluates the strategy and either approves or requests revisions (max configurable iterations, default 2). Set `--max-reflect 0` to skip.
