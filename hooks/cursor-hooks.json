@@ -19,6 +19,10 @@
       {
         "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-dashboard.sh \"$CLAUDE_TOOL_ARG_FILE_PATH\"",
         "matcher": "dashboard"
+      },
+      {
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-agent-report.sh",
+        "matcher": "agent"
       }
     ],
     "afterShellExecution": [
