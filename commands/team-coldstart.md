@@ -79,68 +79,73 @@ The `/team coldstart` command initiates an end-to-end data pipeline:
 - Quality check: PASSED (no critical issues)
 ```
 
-### Stage 2: Analysis (Sequential → Parallel)
+### Stage 2: Analysis (Sequential → Parallel with Report Bus)
 
-**Step 2a: Run EDA first** (generates structured report for downstream agents):
+**Step 2a: Run EDA first** (generates report for downstream agents):
 
-1. **eda-analyst** - Comprehensive EDA + Structured Report
+1. **eda-analyst** - Comprehensive EDA + Report Bus Output
    ```
    Perform thorough exploratory data analysis on {data_path}.
    Generate statistics, visualizations, and identify data quality issues.
 
    CRITICAL: Use ml_utils to save structured EDA report:
-   - Copy ml_utils.py from ~/.config/opencode/ml-automation/templates/ml_utils.py to src/ml_utils.py
+   - Copy ml_utils.py from the plugin templates if not present in src/
    - Call generate_eda_summary(df, target_col) and save_eda_report(summary)
    - Also save reports/eda_report.md with narrative findings
+   - The save_eda_report function will automatically write to the report bus
 
-   Output: EDA report + .claude/eda_report.json (structured)
+   Output: EDA report + agent bus report (eda-analyst_report.json)
    ```
 
-**Step 2b: Run these in parallel** (after EDA completes, so they can read its report):
+**Step 2b: Run these in PARALLEL** (after EDA completes — they all read the EDA report independently):
+
+Spawn ALL THREE agents concurrently using multiple Task tool calls in a single message:
 
 2. **ml-theory-advisor** - Data quality and leakage review (if ML mode)
    ```
    Review the dataset {data_path} for potential data leakage risks.
    Check for features that may contain target information.
-   Read .claude/eda_report.json for prior EDA context if available.
+   FIRST: Read .claude/reports/eda-analyst_report.json (or .claude/eda_report.json) for prior EDA context.
    Validate data splitting strategy.
-   Output: Quality and leakage assessment report
+   WHEN DONE: Write your report using save_agent_report("ml-theory-advisor", {...})
+   Output: Quality and leakage assessment report + agent bus report
    ```
 
 3. **feature-engineering-analyst** - ML Feature Engineering
    ```
    Analyze {data_path} and engineer predictive features.
-   READ .claude/eda_report.json first — use the EDA findings (distributions, correlations,
-   quality issues, column types) to inform your feature engineering strategy.
-
-   Recommend:
-   - Feature transformations (log, binning, interactions, temporal)
-   - Aggregation features
-   - Encoding strategies
-   - Features to drop (leakage, redundancy)
-   Output: Feature engineering plan with implementation code
+   FIRST: Read .claude/reports/eda-analyst_report.json (or .claude/eda_report.json) — use the EDA findings
+   to inform your feature engineering strategy.
+   WHEN DONE: Write your report using save_agent_report("feature-engineering-analyst", {...})
+   Output: Feature engineering plan + agent bus report
    ```
+
+4. **frontend-ux-analyst** - Dashboard Planning
+   ```
+   Review the EDA findings for {data_path} to plan dashboard visualizations.
+   FIRST: Read .claude/reports/eda-analyst_report.json for data context.
+   Recommend dashboard layout, key visualizations, and interactive features.
+   WHEN DONE: Write your report using save_agent_report("frontend-ux-analyst", {...})
+   Output: Dashboard design recommendations + agent bus report
+   ```
+
+**Wait for all three to complete before proceeding to Stage 3.**
 
 **Output:**
 ```markdown
 ## Stage 2: Analysis ✓
 
 ### EDA Summary
-- Dataset: 10,000 rows x 25 columns
-- Target: Revenue (continuous) OR None (analysis mode)
-- Key columns: Category, Region, Date, Amount
-- Missing values: 3 columns with >5% missing
-- Recommendations: Handle nulls, normalize amounts
+- Dataset: {rows} rows x {cols} columns
+- Target: {target} ({type}) OR None (analysis mode)
+- Key columns: {list}
+- Missing values: {count} columns with >5% missing
+- Recommendations: {list}
 
-### Data Quality Assessment
-- No critical leakage detected (ML mode)
-- Data distribution: Normal for most numeric columns
-- Outliers identified in 2 columns
-
-### Column/Feature Recommendations
-1. Create time-based features from Date
-2. Aggregate by Category for insights
-3. Normalize Amount by Region
+### Parallel Analysis Results
+- Feature Engineering: {count} features recommended
+- ML Theory: {leakage_status}, {methodology_notes}
+- Dashboard Planning: {visualization_recommendations}
 ```
 
 ### Stage 3: Data Processing
@@ -274,6 +279,36 @@ PR #2: Merged ✓
 
 Methodology validated ✓
 ```
+
+### Stage 5b: Post-Training Review (PARALLEL)
+
+Spawn ALL THREE review agents concurrently:
+
+1. **brutal-code-reviewer** - Code quality review
+   ```
+   Review all code written in this workflow for quality and maintainability.
+   FIRST: Read all reports in .claude/reports/ for context on what was built.
+   WHEN DONE: Write your report using save_agent_report("brutal-code-reviewer", {...})
+   Output: Code review report + agent bus report
+   ```
+
+2. **ml-theory-advisor** - Methodology validation
+   ```
+   Review the trained model and evaluation results for methodology issues.
+   FIRST: Read all reports in .claude/reports/ for full workflow context.
+   WHEN DONE: Write your report using save_agent_report("ml-theory-advisor", {...})
+   Output: Theory review report + agent bus report
+   ```
+
+3. **frontend-ux-analyst** - Dashboard UX review (if dashboard exists)
+   ```
+   Review the generated Streamlit dashboard for UX quality.
+   FIRST: Read all reports in .claude/reports/ for context.
+   WHEN DONE: Write your report using save_agent_report("frontend-ux-analyst", {...})
+   Output: UX review report + agent bus report
+   ```
+
+**Wait for all three to complete before proceeding to Stage 6.**
 
 ### Stage 6: Streamlit Dashboard
 

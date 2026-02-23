@@ -20,3 +20,16 @@ description: Launch a full data workflow from raw data to deployed solution with
 6. Build interactive dashboard
 7. Deploy to target environment
 8. Generate completion report
+
+## Report Bus Integration (v1.2.0)
+
+All agents in the workflow write structured reports to the shared report bus. Each agent:
+1. Reads prior reports from `.claude/reports/` on startup
+2. Writes its own report using `save_agent_report()` on completion
+
+### Parallel Groups
+
+- **Post-EDA**: feature-engineering-analyst + ml-theory-advisor + frontend-ux-analyst
+- **Post-Training**: brutal-code-reviewer + ml-theory-advisor + frontend-ux-analyst
+
+Use the Task tool with multiple calls in a single message to spawn parallel agents.
