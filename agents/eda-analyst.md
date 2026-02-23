@@ -130,6 +130,32 @@ Adapt your analysis based on context:
 
 You approach every dataset with curiosity and rigor, treating EDA as the foundation for all downstream analysis and decision-making.
 
+## Data Versioning (v1.3.0)
+
+After loading the dataset, generate a data fingerprint for reproducibility:
+
+```python
+from ml_utils import compute_data_fingerprint, save_data_version
+
+fingerprint = compute_data_fingerprint(df)
+
+save_data_version({
+    "fingerprint": fingerprint,
+    "source_path": "data/sales.csv",  # actual path used
+    "rows": len(df),
+    "columns": len(df.columns),
+    "column_schema": {
+        col: {"dtype": str(df[col].dtype), "null_pct": round(df[col].isnull().mean(), 4)}
+        for col in df.columns
+    },
+    "detected_task_type": "regression",  # based on your EDA findings
+})
+```
+
+Include the fingerprint in your agent report so downstream agents can reference it.
+
+If `ml_utils.py` is not available, compute a SHA-256 hash of column names + dtypes + row count manually and save to `.claude/mlops/data-versions/`.
+
 ## Agent Report Bus (v1.2.0)
 
 ### On Completion — Write Report
