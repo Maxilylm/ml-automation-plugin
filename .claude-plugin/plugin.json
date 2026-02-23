@@ -1,7 +1,7 @@
 {
   "name": "ml-automation",
-  "version": "1.1.0",
-  "description": "End-to-end ML automation workflow for Claude Code. Includes 10 specialized agents (EDA, ML theory, MLOps, feature engineering, code review, etc.), slash commands for every stage of the ML lifecycle, reusable ML utilities, and hooks for quality gates. v1.1: ML-focused feature engineering agent, reusable ml_utils module, EDA-to-feature-engineering pipeline.",
+  "version": "1.2.0",
+  "description": "End-to-end ML automation workflow for Claude Code. Includes 10 specialized agents with shared report bus for inter-agent communication, parallel execution groups, /status command for workflow visibility, reusable ML utilities, and hooks for quality gates. v1.2: Shared Report Bus, parallel agent groups, /status command.",
   "author": {
     "name": "Maximo Lorenzo y Losada"
   },
@@ -17,6 +17,8 @@
     "mlops",
     "deployment",
     "streamlit",
-    "workflows"
+    "workflows",
+    "report-bus",
+    "parallel-agents"
   ]
 }
