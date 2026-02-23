@@ -45,3 +45,16 @@ Three reflection checkpoints validate outputs before the next stage proceeds:
 | Gate 3 | Training | Evaluation | Model family, hyperparameters, validation |
 
 Each gate spawns ml-theory-advisor in reflection mode. If verdict is `revise`, the upstream agent re-runs with corrections (max `--max-reflect` iterations, default 2). Set `--max-reflect 0` to skip gates.
+
+## MLOps Registry Layer (v1.3.0)
+
+Convention-based MLOps registries track the full model lifecycle:
+
+| Registry | Agent | Written At |
+|----------|-------|-----------|
+| Data Versions | eda-analyst | Stage 2a (EDA) |
+| Feature Store | feature-engineering-analyst | Stage 2b (Post-EDA) |
+| Experiments | developer | Stage 4 (Training) |
+| Model Registry | mlops-engineer | Stage 5c (Validation) |
+
+Stage 5c (MLOps Registry Validation) ensures all registries are complete and lineage is traceable from data to deployed model. Use `/registry` to inspect.

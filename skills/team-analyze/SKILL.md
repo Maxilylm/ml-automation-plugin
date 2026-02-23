@@ -27,3 +27,7 @@ Use `ml_utils.get_workflow_status()` after all agents complete to display a unif
 ## Reflection Gate (v1.2.1)
 
 After parallel analysis completes, a reflection gate validates feature engineering output before the summary report. The ml-theory-advisor evaluates the strategy and either approves or requests revisions (max configurable iterations, default 2). Set `--max-reflect 0` to skip.
+
+## MLOps Registry (v1.3.0)
+
+During analysis, eda-analyst generates a data fingerprint and feature-engineering-analyst registers features. Use `/registry` to inspect stored artifacts.
