@@ -210,33 +210,55 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
 def save_eda_report(report_data, output_dir=".claude"):
     """
     Save structured EDA report as JSON for downstream agents.
-
-    Args:
-        report_data: dict with keys like 'shape', 'columns', 'dtypes',
-                     'missing', 'correlations', 'quality_issues', 'summary'
+    Also saves in the new agent report bus format for v1.2.0+ compatibility.
     """
     os.makedirs(output_dir, exist_ok=True)
     path = os.path.join(output_dir, "eda_report.json")
     with open(path, "w") as f:
         json.dump(report_data, f, indent=2, default=str)
+
+    bus_report = {
+        "status": "completed",
+        "findings": {
+            "summary": f"EDA completed: {report_data.get('shape', {}).get('rows', '?')} rows, {report_data.get('shape', {}).get('cols', '?')} columns",
+            "details": report_data,
+        },
+        "recommendations": [],
+        "next_steps": ["Run feature engineering", "Run ML theory review"],
+        "artifacts": [path],
+        "depends_on": [],
+        "enables": ["feature-engineering-analyst", "ml-theory-advisor", "frontend-ux-analyst"],
+    }
+    for issue in report_data.get("quality_issues", []):
+        bus_report["recommendations"].append({
+            "action": f"Address {issue.get('issue', 'unknown')} in column {issue.get('column', '?')}",
+            "priority": issue.get("severity", "medium"),
+            "target_agent": "feature-engineering-analyst",
+        })
+
+    save_agent_report("eda-analyst", bus_report)
     return path
 
 
 def load_eda_report(search_dirs=None):
     """
     Load prior EDA report if it exists.
-
-    Searches in .claude/eda_report.json and reports/eda_report.json.
-    Returns dict or None.
+    Checks both legacy .claude/eda_report.json and new bus format.
     """
     if search_dirs is None:
-        search_dirs = [".claude", "reports"]
+        search_dirs = [".claude", "reports", ".claude/reports", ".cursor/reports"]
 
     for d in search_dirs:
         path = os.path.join(d, "eda_report.json")
         if os.path.exists(path):
             with open(path) as f:
                 return json.load(f)
+
+    reports = load_agent_reports(search_dirs)
+    eda = reports.get("eda-analyst")
+    if eda:
+        return eda.get("findings", {}).get("details", eda.get("findings", {}))
+
     return None
 
 
@@ -322,3 +344,116 @@ def _detect_quality_issues(df, col_types):
             issues.append({"column": col, "issue": "majority_missing", "severity": "high", "pct": round(pct_missing * 100, 1)})
 
     return issues
+
+
+# =============================================================================
+# 7. AGENT REPORT BUS
+# =============================================================================
+
+REPORT_SCHEMA_VERSION = "1.2.0"
+
+PLATFORM_REPORT_DIRS = [".claude/reports", ".cursor/reports", ".codex/reports", ".opencode/reports", "reports"]
+
+
+def save_agent_report(agent_name, report_data, output_dirs=None):
+    """
+    Save a standardized agent report to all platform report directories.
+
+    Args:
+        agent_name: The agent identifier (e.g., 'eda-analyst')
+        report_data: Dict with keys: findings, recommendations, next_steps, artifacts
+        output_dirs: List of directories to write to (defaults to all platform dirs)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    report = {
+        "agent": agent_name,
+        "version": REPORT_SCHEMA_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": report_data.get("status", "completed"),
+        "findings": report_data.get("findings", {}),
+        "recommendations": report_data.get("recommendations", []),
+        "next_steps": report_data.get("next_steps", []),
+        "artifacts": report_data.get("artifacts", []),
+        "depends_on": report_data.get("depends_on", []),
+        "enables": report_data.get("enables", []),
+    }
+
+    filename = f"{agent_name}_report.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(report, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_agent_reports(search_dirs=None):
+    """
+    Load all agent reports from report directories.
+
+    Returns:
+        dict of agent_name -> report_dict (most recent per agent)
+    """
+    import glob as globmod
+
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    reports = {}
+    for d in search_dirs:
+        pattern = os.path.join(d, "*_report.json")
+        for filepath in globmod.glob(pattern):
+            try:
+                with open(filepath) as f:
+                    report = json.load(f)
+                agent = report.get("agent", os.path.basename(filepath).replace("_report.json", ""))
+                if agent not in reports or report.get("timestamp", "") > reports[agent].get("timestamp", ""):
+                    reports[agent] = report
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return reports
+
+
+def get_workflow_status(search_dirs=None):
+    """
+    Get a summary of workflow status from agent reports.
+
+    Returns:
+        dict with keys: completed (list), pending (list), insights (list)
+    """
+    reports = load_agent_reports(search_dirs)
+
+    workflow_agents = [
+        "eda-analyst", "feature-engineering-analyst", "ml-theory-advisor",
+        "frontend-ux-analyst", "developer", "brutal-code-reviewer",
+        "pr-approver", "mlops-engineer", "orchestrator", "assigner",
+    ]
+
+    completed = []
+    for agent_name, report in reports.items():
+        summary = report.get("findings", {}).get("summary", "No summary")
+        completed.append({"agent": agent_name, "summary": summary, "timestamp": report.get("timestamp", "")})
+
+    completed_names = set(reports.keys())
+    pending = [a for a in workflow_agents if a not in completed_names]
+
+    insights = []
+    for agent_name, report in reports.items():
+        for rec in report.get("recommendations", []):
+            if rec.get("target_agent") and rec.get("target_agent") in completed_names:
+                insights.append({
+                    "from": agent_name,
+                    "to": rec["target_agent"],
+                    "action": rec.get("action", ""),
+                    "priority": rec.get("priority", "medium"),
+                })
+
+    return {"completed": completed, "pending": pending, "insights": insights}
