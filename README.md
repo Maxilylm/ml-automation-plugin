@@ -51,6 +51,27 @@ If issues are found, the upstream agent re-runs with corrections (max 2 iteratio
 /team coldstart data.csv --target Revenue --max-reflect 3
 ```
 
+## What's New in v1.3.0
+
+### MLOps Registry Layer
+
+Convention-based MLOps registries — no external dependencies required:
+
+- **Model Registry**: Track trained models with metrics, lineage, rationale, and champion/challenger status
+- **Feature Store**: Catalog engineered features with transformations, statistics, and reusability metadata
+- **Experiment Tracking**: Log every training run with hyperparameters, metrics, and approach rationale
+- **Data Versioning**: Fingerprint datasets for reproducibility
+
+Task-type aware — adapts metrics and validation for classification, regression, MMM, segmentation, and time series.
+
+```bash
+# Inspect registries
+/registry                          # Summary of all registries
+/registry models --champion        # Show champion model details
+/registry features --domain mmm    # Filter features by domain
+/registry lineage model_id         # Trace full lineage
+```
+
 ## What's Included
 
 ### 10 Specialized Agents
@@ -83,6 +104,7 @@ If issues are found, the upstream agent re-runs with corrections (max 2 iteratio
 | `team-analyze` | Quick multi-agent data analysis |
 | `team-review` | Multi-agent code review |
 | `status` | Show workflow status and agent reports |
+| `registry` | Inspect MLOps registries (models, features, experiments, data) |
 
 ### Hooks
 
