@@ -129,6 +129,8 @@ Output a structured report with findings and recommendations.
 3. Consider Name for title extraction
 ```
 
+After EDA completes, eda-analyst generates a data fingerprint stored in `.claude/mlops/data-versions/`.
+
 ### Step 3: Leakage Review (Invoke ml-theory-advisor)
 
 **Prompt for ml-theory-advisor:**
@@ -253,6 +255,8 @@ Provide specific, implementable recommendations.
 - Ticket (high cardinality, low value)
 - Cabin (77% missing)
 ```
+
+After feature analysis completes, features are registered in `.claude/mlops/feature-store.json`.
 
 ### Step 5: Summary Report
 
