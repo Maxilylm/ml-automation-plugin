@@ -655,7 +655,12 @@ def save_model_entry(model_entry, output_dirs=None):
         "tags": model_entry.get("tags", []),
     }
 
-    registry["models"].append(entry)
+    # Deduplicate: update existing entry if model_id already registered
+    existing_idx = next((i for i, m in enumerate(registry["models"]) if m.get("model_id") == entry["model_id"]), None)
+    if existing_idx is not None:
+        registry["models"][existing_idx] = entry
+    else:
+        registry["models"].append(entry)
     return _save_registry("model-registry.json", registry, output_dirs)
 
 
@@ -680,13 +685,13 @@ def promote_model(model_id, search_dirs=None, output_dirs=None):
     registry = _load_registry("model-registry.json", search_dirs) or {"version": MLOPS_SCHEMA_VERSION, "models": []}
 
     # Verify target model exists before archiving current champion
-    if not any(m["model_id"] == model_id for m in registry["models"]):
+    if not any(m.get("model_id") == model_id for m in registry["models"]):
         return []
 
     for model in registry["models"]:
         if model["model_id"] == model_id:
             model["status"] = "champion"
-        elif model["status"] == "champion":
+        elif model.get("status") == "champion":
             model["status"] = "archived"
 
     return _save_registry("model-registry.json", registry, output_dirs)
@@ -710,7 +715,7 @@ def save_feature_entries(features, output_dirs=None):
         "features": [],
     }
 
-    existing_ids = {f["feature_id"] for f in store["features"]}
+    existing_ids = {f.get("feature_id") for f in store["features"]}
     now = datetime.now(timezone.utc).isoformat()
 
     for feat in features:
@@ -741,6 +746,7 @@ def save_feature_entries(features, output_dirs=None):
                 "leakage_risk": feat.get("leakage_risk", "unknown"),
             }
             store["features"].append(entry)
+            existing_ids.add(fid)  # track within batch to prevent duplicates
 
     return _save_registry("feature-store.json", store, output_dirs)
 

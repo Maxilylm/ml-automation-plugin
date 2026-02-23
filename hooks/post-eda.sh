@@ -43,10 +43,19 @@ for DIR in .claude/reports reports .cursor/reports; do
     fi
 done
 
-if [ ! -f ".claude/eda_report.json" ]; then
-    echo "  - WARNING: No structured EDA report (.claude/eda_report.json) found"
+# Only warn if neither legacy nor bus-format report exists
+BUS_REPORT_FOUND=false
+for DIR in .claude/reports reports .cursor/reports; do
+    if [ -f "$DIR/eda-analyst_report.json" ]; then
+        BUS_REPORT_FOUND=true
+        break
+    fi
+done
+
+if [ ! -f ".claude/eda_report.json" ] && [ "$BUS_REPORT_FOUND" = false ]; then
+    echo "  - WARNING: No EDA report found (neither legacy nor bus-format)"
     echo "    Feature engineering agent will work without prior EDA context"
-    echo "    Tip: Use generate_eda_summary() from ml_utils.py to create one"
+    echo "    Tip: Use save_agent_report('eda-analyst', {...}) from ml_utils.py"
 fi
 
 # 4. Notify about data quality issues
