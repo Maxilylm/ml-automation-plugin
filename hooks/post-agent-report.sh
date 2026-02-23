@@ -4,8 +4,31 @@
 
 set -e
 
-AGENT_TYPE="${CLAUDE_TOOL_ARG_SUBAGENT_TYPE:-unknown}"
+AGENT_TYPE="${CLAUDE_TOOL_ARG_SUBAGENT_TYPE:-}"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+# If agent type is unknown, scan for any recent reports instead
+if [ -z "$AGENT_TYPE" ]; then
+    echo "[Post-Agent Hook] Agent type not available, scanning for recent reports"
+    REPORT_FOUND=false
+    for DIR in .claude/reports reports .cursor/reports .codex/reports .opencode/reports; do
+        if [ -d "$DIR" ]; then
+            # Find reports modified in the last 60 seconds
+            RECENT=$(find "$DIR" -name "*_report.json" -not -name "*_reflection_*" -newer /tmp/.agent_hook_marker 2>/dev/null || true)
+            if [ -n "$RECENT" ]; then
+                REPORT_FOUND=true
+                echo "  ✓ Recent report(s) found in $DIR"
+            fi
+        fi
+    done
+    if [ "$REPORT_FOUND" = false ]; then
+        echo "  ⚠ No recent reports found in any report directory"
+    fi
+    # Log and exit — can't do targeted validation without agent type
+    mkdir -p .claude
+    echo "$TIMESTAMP - Agent report check: unknown agent (found=$REPORT_FOUND)" >> .claude/workflow.log 2>/dev/null || true
+    exit 0
+fi
 
 echo "[Post-Agent Hook] Checking report for agent: $AGENT_TYPE"
 
@@ -39,9 +62,10 @@ print(f'  ✓ Schema valid (agent={report[\"agent\"]}, status={report[\"status\"
 done
 
 if [ "$REPORT_FOUND" = false ]; then
-    echo "  ⚠ No report found for agent: $AGENT_TYPE"
+    echo "  ✗ No report found for agent: $AGENT_TYPE"
     echo "    Expected: .claude/reports/${AGENT_TYPE}_report.json"
     echo "    Tip: Agent should call save_agent_report() from ml_utils.py"
+    exit 1
 fi
 
 # Log to workflow log

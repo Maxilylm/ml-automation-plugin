@@ -21,7 +21,7 @@
         "matcher": "dashboard"
       },
       {
-        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-agent-report.sh",
+        "command": "touch /tmp/.agent_hook_marker && bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-agent-report.sh",
         "matcher": "agent"
       }
     ],
