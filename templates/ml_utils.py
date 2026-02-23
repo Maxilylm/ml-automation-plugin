@@ -679,11 +679,15 @@ def promote_model(model_id, search_dirs=None, output_dirs=None):
     """Promote a model to champion, archiving the current champion."""
     registry = _load_registry("model-registry.json", search_dirs) or {"version": MLOPS_SCHEMA_VERSION, "models": []}
 
+    # Verify target model exists before archiving current champion
+    if not any(m["model_id"] == model_id for m in registry["models"]):
+        return []
+
     for model in registry["models"]:
-        if model["status"] == "champion":
-            model["status"] = "archived"
         if model["model_id"] == model_id:
             model["status"] = "champion"
+        elif model["status"] == "champion":
+            model["status"] = "archived"
 
     return _save_registry("model-registry.json", registry, output_dirs)
 
