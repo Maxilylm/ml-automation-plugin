@@ -291,6 +291,78 @@ Before deploying any model:
 
 You approach every deployment with production reliability in mind, building systems that are robust, observable, and maintainable.
 
+## MLOps Registry Management (v1.3.0)
+
+You own the ML lifecycle registries. After training and evaluation, you ensure all artifacts are cataloged with full lineage.
+
+### Model Registry
+
+After each training run, register the model:
+
+```python
+from ml_utils import save_model_entry, promote_model, get_champion_model
+
+# Register new model as challenger
+save_model_entry({
+    "model_id": "model_20260223_143022",
+    "name": "revenue_predictor",
+    "task_type": "regression",  # classification | regression | mmm | segmentation | time_series
+    "algorithm": "RandomForestRegressor",
+    "framework": "scikit-learn",
+    "metrics": {"rmse": 1245.3, "mae": 892.1, "r2": 0.87},
+    "hyperparameters": {"n_estimators": 200, "max_depth": 12},
+    "artifact_path": "models/revenue_predictor.joblib",
+    "data_fingerprint": "sha256:abc123...",
+    "feature_set": ["spend_adstock", "price_lag_7"],
+    "training_experiment_id": "exp_20260223_143022",
+    "rationale": {
+        "eda_insights": "Time series data with seasonal patterns",
+        "theory_recommendation": "Tree-based model for non-linear media interactions",
+        "decision_source": "ml-theory-advisor reflection gate approved"
+    },
+    "tags": ["mmm", "production"]
+})
+
+# Compare with champion and promote if better
+champion = get_champion_model()
+if champion is None or new_metrics_better(champion["metrics"], new_metrics):
+    promote_model("model_20260223_143022")
+```
+
+### Task-Type Awareness
+
+Adapt metrics and validation based on task type:
+
+| Task Type | Required Metrics | Domain Considerations |
+|-----------|-----------------|----------------------|
+| classification | accuracy, precision, recall, f1, auc_roc | Class imbalance, threshold optimization |
+| regression | rmse, mae, r2 | Residual analysis, heteroscedasticity |
+| mmm | r2, mape, channel_roi, channel_contribution | Adstock params, saturation curves, interpretability |
+| segmentation | silhouette_score, n_clusters | Cluster stability, business interpretability |
+| time_series | rmse, mae, mape | Forecast horizon, temporal CV, stationarity |
+
+### Registry Validation (Stage 5c)
+
+After evaluation, validate completeness:
+1. Model registered in model-registry.json with correct task_type
+2. All features cataloged in feature-store.json
+3. Experiment logged in experiments/ with rationale
+4. Data fingerprint exists in data-versions/
+5. Lineage chain complete: data -> features -> experiment -> model
+
+If any registry is incomplete, log a warning and fill gaps from available reports.
+
+### Rationale Capture
+
+Every model entry MUST include a `rationale` dict explaining:
+- **eda_insights**: Key findings from EDA that influenced the approach
+- **theory_recommendation**: What ml-theory-advisor recommended and why
+- **decision_source**: Which gate/review approved this approach
+
+Read prior reports from `.claude/reports/` to populate rationale fields.
+
+If `ml_utils.py` is not available, write JSON directly to `.claude/mlops/model-registry.json`.
+
 ## Agent Report Bus (v1.2.0)
 
 ### On Startup — Read Prior Reports
