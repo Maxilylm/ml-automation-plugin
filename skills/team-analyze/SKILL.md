@@ -17,3 +17,9 @@ description: Run a quick analysis workflow on any dataset. Performs EDA, quality
 3. Quality review and leakage detection
 4. Feature engineering recommendations
 5. Summary with actionable next steps
+
+## Report Bus Integration (v1.2.0)
+
+All agents write structured reports to the shared report bus. After EDA completes, spawn ml-theory-advisor and feature-engineering-analyst in parallel — they both read the EDA report independently.
+
+Use `ml_utils.get_workflow_status()` after all agents complete to display a unified summary.
