@@ -148,6 +148,49 @@ Spawn ALL THREE agents concurrently using multiple Task tool calls in a single m
 - Dashboard Planning: {visualization_recommendations}
 ```
 
+### Stage 2c: Gate 1 — Reflect on Feature Engineering (Reflection Loop)
+
+**Reflection gate** — validates feature engineering output before preprocessing proceeds.
+
+```
+iteration = 0
+max_iterations = {--max-reflect, default: 2}
+```
+
+1. **Spawn ml-theory-advisor in reflection mode:**
+   ```
+   REFLECTION MODE — Gate 1: Post-Feature-Engineering
+
+   Read ALL reports in .claude/reports/, especially:
+   - eda-analyst_report.json
+   - feature-engineering-analyst_report.json
+
+   Evaluate whether the proposed feature engineering strategy is sound:
+   - Are features appropriate for the problem domain?
+   - Are domain-specific transformations included (e.g., adstock for MMM, lag for time series)?
+   - Any leakage risk in the proposed features?
+   - Is variable selection justified?
+
+   Write reflection report using save_reflection_report("post-feature-engineering", {...})
+   Your verdict must be either "approved" or "revise" with specific corrections.
+   ```
+
+2. **Read reflection report verdict:**
+   - If `"verdict": "approved"` → proceed to Stage 3
+   - If `"verdict": "revise"` → re-spawn feature-engineering-analyst with corrections:
+     ```
+     REVISION REQUEST from ml-theory-advisor reflection gate.
+
+     Read the reflection report at .claude/reports/ml-theory-advisor_reflection_post-feature-engineering_report.json
+     Address the corrections listed. Update your feature engineering plan accordingly.
+     Write your updated report using save_agent_report("feature-engineering-analyst", {...})
+     ```
+   - Increment iteration, loop back to step 1
+
+3. **If max iterations reached with verdict still "revise":**
+   - Log warning: "Gate 1: Max reflection iterations reached, proceeding with best effort"
+   - Proceed to Stage 3
+
 ### Stage 3: Data Processing
 
 **Actions:**
@@ -197,6 +240,16 @@ def process_data(df, target_col=None, mode='ml'):
 - PR #1: Merged ✓
 - Quality check: PASSED
 ```
+
+### Stage 3b: Gate 2 — Reflect on Preprocessing Pipeline (Reflection Loop)
+
+**Reflection gate** — validates preprocessing pipeline before training proceeds.
+
+Same iteration loop pattern as Gate 1, but:
+- Gate name: `"post-preprocessing"`
+- Reflection prompt focuses on: pipeline design, scaling/encoding choices, data flow correctness, consistency with chosen model family
+- Reports to read: preprocessing report + feature-engineering report + EDA report
+- On revise: re-run Stage 3 (preprocessing) with corrections from reflection report
 
 ### Stage 4: Modeling / Insights Generation
 
@@ -252,6 +305,17 @@ PR #2: Merged ✓
 Insights saved: reports/insights.md
 PR #2: Merged ✓
 ```
+
+### Stage 4b: Gate 3 — Reflect on Training Approach (Reflection Loop)
+
+**Reflection gate** — validates training approach before evaluation proceeds.
+
+Same iteration loop pattern as Gate 1, but:
+- Gate name: `"post-training"`
+- Reflection prompt focuses on: model family appropriateness for the domain, hyperparameter strategy, validation approach, whether better alternatives exist
+- Reports to read: ALL prior reports + training report
+- On revise: re-run Stage 4 (training) with corrections from reflection report
+- Example: For MMM, might recommend Bayesian regression over gradient boosting
 
 ### Stage 5: Evaluation
 
@@ -512,6 +576,7 @@ If any stage fails:
 | `--cv-folds` | 5 | Cross-validation folds (ML mode) |
 | `--coverage-threshold` | 80 | Minimum test coverage |
 | `--no-dashboard` | false | Skip dashboard creation |
+| `--max-reflect` | 2 | Maximum reflection iterations per gate (0 to skip gates) |
 
 ## Dashboard Customization
 
