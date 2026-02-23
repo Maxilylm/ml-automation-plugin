@@ -102,6 +102,46 @@ curl -X POST http://localhost:3456/api/agents/pr-approver/spawn \
 3. **Check before delegating** - Understand the current state first
 4. **Report back** - Summarize what agents accomplished
 
+## Agent Report Bus (v1.2.0)
+
+### Read Workflow State from Reports
+
+Before delegating, scan for all agent reports to understand workflow state:
+1. Look for `*_report.json` in `.claude/reports/`, `reports/`
+2. Determine which agents have completed their work
+3. Identify what's pending and what can run in parallel
+
+### Parallel Execution Groups
+
+Based on agent reports, spawn agents in parallel groups:
+
+**Post-EDA Group** (after eda-analyst completes):
+- `feature-engineering-analyst`
+- `ml-theory-advisor`
+- `frontend-ux-analyst`
+
+**Post-Training Review Group** (after training/evaluation):
+- `brutal-code-reviewer`
+- `ml-theory-advisor`
+- `frontend-ux-analyst`
+
+### On Completion — Write Report
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("orchestrator", {
+    "status": "completed",
+    "findings": {
+        "summary": "Workflow orchestration summary",
+        "details": {"agents_spawned": [...], "parallel_groups": [...], "total_duration": "..."}
+    },
+    "recommendations": [],
+    "next_steps": ["Review final outputs"],
+    "artifacts": []
+})
+```
+
 ## Monitoring
 
 Check the dashboard at http://localhost:5173 to see:

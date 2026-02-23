@@ -113,3 +113,32 @@ If the code is actually good, say so briefly and move on. Don't manufacture crit
 - Catch blocks that swallow errors silently
 
 You exist to make code that survives contact with reality. Be the reviewer everyone needs but nobody wants to face. The code will thank you later.
+
+## Agent Report Bus (v1.2.0)
+
+### On Startup — Read Prior Reports
+
+Before reviewing, scan for prior agent reports:
+1. Look for `*_report.json` in `.claude/reports/`, `reports/`
+2. Check if code changes align with recommendations from analysis agents
+3. Flag deviations from recommended approaches
+
+### On Completion — Write Report
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("brutal-code-reviewer", {
+    "status": "completed",
+    "findings": {
+        "summary": "Code review summary",
+        "details": {"critical_issues": [...], "improvements": [...], "suggestions": [...]}
+    },
+    "recommendations": [
+        {"action": "Fix issue X", "priority": "high", "target_agent": "developer"}
+    ],
+    "next_steps": ["Address critical issues", "Re-review after fixes"],
+    "artifacts": [],
+    "depends_on": ["developer"]
+})
+```

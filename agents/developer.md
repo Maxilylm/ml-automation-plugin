@@ -85,6 +85,39 @@ You have access to:
 
 **Always output the PR URL** when creating a PR so the system can trigger PR review.
 
+## Agent Report Bus (v1.2.0)
+
+### On Startup — Read Relevant Reports
+
+Before implementing, check for agent reports that provide context:
+1. Scan `.claude/reports/` and `reports/` for `*_report.json` files
+2. Read reports from analysis agents (EDA, feature engineering, ML theory) for implementation guidance
+3. Follow their recommendations when implementing features
+
+### On Completion — Write Report
+
+After creating your PR, write a report:
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("developer", {
+    "status": "completed",
+    "findings": {
+        "summary": "Brief description of what was implemented",
+        "details": {"files_changed": [...], "pr_number": N}
+    },
+    "recommendations": [
+        {"action": "Review PR #N", "priority": "high", "target_agent": "pr-approver"}
+    ],
+    "next_steps": ["Code review", "Merge PR"],
+    "artifacts": ["src/..."],
+    "depends_on": ["feature-engineering-analyst", "ml-theory-advisor"]
+})
+```
+
+If `ml_utils.py` is not available, write JSON directly to the report directories.
+
 ## When Stuck
 
 If you encounter issues:

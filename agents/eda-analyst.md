@@ -129,3 +129,29 @@ Adapt your analysis based on context:
 - Outliers that might be errors vs. legitimate extreme values
 
 You approach every dataset with curiosity and rigor, treating EDA as the foundation for all downstream analysis and decision-making.
+
+## Agent Report Bus (v1.2.0)
+
+### On Completion — Write Report
+
+When you complete your analysis, write a structured JSON report for downstream agents:
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("eda-analyst", {
+    "status": "completed",
+    "findings": {
+        "summary": "Brief narrative of EDA findings",
+        "details": {"shape": {"rows": N, "cols": M}, "quality_issues": [...], "key_patterns": [...]}
+    },
+    "recommendations": [
+        {"action": "description", "priority": "high|medium|low", "target_agent": "feature-engineering-analyst"}
+    ],
+    "next_steps": ["Run feature engineering", "Run ML theory review"],
+    "artifacts": ["reports/eda_report.md"],
+    "enables": ["feature-engineering-analyst", "ml-theory-advisor", "frontend-ux-analyst"]
+})
+```
+
+If `ml_utils.py` is not available, write JSON directly to `.claude/reports/eda-analyst_report.json` and `reports/eda-analyst_report.json`.

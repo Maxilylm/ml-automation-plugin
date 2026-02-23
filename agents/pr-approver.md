@@ -63,6 +63,33 @@ gh pr merge <number> --squash --delete-branch
 3. **Verify scope** - Make sure changes match the PR description
 4. **No force merges** - If there are conflicts, ask for resolution
 
+## Agent Report Bus (v1.2.0)
+
+### On Startup — Read Workflow State
+
+Before reviewing a PR, check for prior agent reports:
+1. Scan `.claude/reports/` for `*_report.json` files
+2. Understand what agents have run and what they recommended
+3. Verify the PR addresses recommendations from analysis agents
+
+### On Completion — Write Report
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("pr-approver", {
+    "status": "completed",
+    "findings": {
+        "summary": "PR review decision",
+        "details": {"pr_number": "N", "decision": "approved|changes_requested", "comments": [...]}
+    },
+    "recommendations": [],
+    "next_steps": ["Merge completed"],
+    "artifacts": [],
+    "depends_on": ["developer", "brutal-code-reviewer"]
+})
+```
+
 ## When to Reject
 
 Reject PRs that:

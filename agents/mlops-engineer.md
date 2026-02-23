@@ -290,3 +290,30 @@ Before deploying any model:
 8. **No Graceful Degradation**: Service crashes instead of returning fallback
 
 You approach every deployment with production reliability in mind, building systems that are robust, observable, and maintainable.
+
+## Agent Report Bus (v1.2.0)
+
+### On Startup — Read Prior Reports
+
+Before deployment decisions, scan for prior agent reports:
+1. Look for `*_report.json` in `.claude/reports/`, `reports/`
+2. Key reports: evaluation results, preprocessing pipeline details, ML theory advice
+3. Use these to inform deployment configuration
+
+### On Completion — Write Report
+
+```python
+from ml_utils import save_agent_report
+
+save_agent_report("mlops-engineer", {
+    "status": "completed",
+    "findings": {
+        "summary": "Deployment summary",
+        "details": {"deployment_target": "...", "endpoints": [...], "monitoring": {...}}
+    },
+    "recommendations": [],
+    "next_steps": ["Monitor model performance", "Set up alerting"],
+    "artifacts": ["Dockerfile", "docker-compose.yml", "api/app.py"],
+    "depends_on": ["developer", "brutal-code-reviewer"]
+})
+```
