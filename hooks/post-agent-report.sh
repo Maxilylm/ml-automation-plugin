@@ -13,8 +13,8 @@ if [ -z "$AGENT_TYPE" ]; then
     REPORT_FOUND=false
     for DIR in .claude/reports reports .cursor/reports .codex/reports .opencode/reports; do
         if [ -d "$DIR" ]; then
-            # Find reports modified in the last 60 seconds
-            RECENT=$(find "$DIR" -name "*_report.json" -not -name "*_reflection_*" -newer /tmp/.agent_hook_marker 2>/dev/null || true)
+            # Find reports modified in the last 2 minutes
+            RECENT=$(find "$DIR" -name "*_report.json" -not -name "*_reflection_*" -mmin -2 2>/dev/null || true)
             if [ -n "$RECENT" ]; then
                 REPORT_FOUND=true
                 echo "  ✓ Recent report(s) found in $DIR"

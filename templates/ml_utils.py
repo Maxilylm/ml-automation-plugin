@@ -582,20 +582,23 @@ TASK_TYPE_METRICS = {
 
 
 def _load_registry(filename, search_dirs=None):
-    """Load a registry JSON file, returning the most recent version found."""
+    """Load a registry JSON file, returning the most recently modified version."""
     if search_dirs is None:
         search_dirs = PLATFORM_MLOPS_DIRS
 
     latest = None
+    latest_mtime = 0
     for d in search_dirs:
         path = os.path.join(d, filename)
         if os.path.exists(path):
             try:
+                mtime = os.path.getmtime(path)
                 with open(path) as f:
                     data = json.load(f)
-                if latest is None:
+                if mtime > latest_mtime:
                     latest = data
-            except (json.JSONDecodeError, KeyError):
+                    latest_mtime = mtime
+            except (json.JSONDecodeError, KeyError, OSError):
                 continue
     return latest
 
