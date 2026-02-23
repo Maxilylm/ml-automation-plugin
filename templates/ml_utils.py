@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
 
 
 # =============================================================================
@@ -170,7 +169,7 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
     """
     from sklearn.metrics import (
         accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
-        mean_squared_error, mean_absolute_error, r2_score,
+        root_mean_squared_error, mean_absolute_error, r2_score,
     )
 
     y_pred = model.predict(X_test)
@@ -196,7 +195,7 @@ def evaluate_model(model, X_test, y_test, problem_type="auto"):
             except Exception:
                 pass
     else:
-        metrics["rmse"] = mean_squared_error(y_test, y_pred, squared=False)
+        metrics["rmse"] = root_mean_squared_error(y_test, y_pred)
         metrics["mae"] = mean_absolute_error(y_test, y_pred)
         metrics["r2"] = r2_score(y_test, y_pred)
 

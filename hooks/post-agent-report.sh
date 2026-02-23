@@ -62,10 +62,10 @@ print(f'  ✓ Schema valid (agent={report[\"agent\"]}, status={report[\"status\"
 done
 
 if [ "$REPORT_FOUND" = false ]; then
-    echo "  ✗ No report found for agent: $AGENT_TYPE"
+    echo "  ⚠ No report found for agent: $AGENT_TYPE"
     echo "    Expected: .claude/reports/${AGENT_TYPE}_report.json"
     echo "    Tip: Agent should call save_agent_report() from ml_utils.py"
-    exit 1
+    # Warn but don't fail — not all agents write reports (e.g., assigner, orchestrator)
 fi
 
 # Log to workflow log
