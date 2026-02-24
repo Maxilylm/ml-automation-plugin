@@ -72,6 +72,45 @@ Task-type aware — adapts metrics and validation for classification, regression
 /registry lineage model_id         # Trace full lineage
 ```
 
+## What's New in v1.3.1
+
+### Report Verification Checkpoints
+
+Orchestrator-level enforcement that every agent saves its report after parallel stages:
+
+- **Step 2b-verify**: Checks ml-theory-advisor, feature-engineering-analyst, frontend-ux-analyst reports after post-EDA analysis
+- **Step 5b-verify**: Checks brutal-code-reviewer, ml-theory-advisor, frontend-ux-analyst reports after post-training review
+- **Step 5c-verify**: Checks mlops-engineer report after registry validation
+- **team-analyze Step 4b**: Checks ml-theory-advisor and feature-engineering-analyst reports
+
+If any report is missing, the agent is re-spawned once with explicit save instructions. If still missing after retry, a warning is logged and the workflow proceeds.
+
+### Grounded Dashboard Creation
+
+Stage 6 no longer uses a placeholder template (`"{count}"`, `"{value}"`, `fig_overview`). Instead:
+
+- Developer agent must read actual report files before writing code
+- All variables must be defined before use — no undefined names
+- Data is loaded and computed at runtime, not hardcoded
+
+### Dashboard Smoke Test Loop
+
+After dashboard creation, a validation loop (max 2 iterations) checks for:
+
+1. **Syntax errors** via `ast.parse`
+2. **Unresolved placeholders** via regex (`"{...}"` patterns)
+3. **Undefined variables** via import-level execution with mocked Streamlit
+
+If validation fails, the developer is re-spawned to fix issues. After max retries, a minimal fallback dashboard is written.
+
+### Upgraded Post-Dashboard Hook
+
+The `post-dashboard.sh` hook now validates beyond basic `py_compile`:
+
+- `ast.parse` for syntax checking
+- Placeholder regex detection (exits 1 on `"{...}"` patterns)
+- Import-level check with mocked Streamlit (catches `NameError`/`ImportError`, tolerates runtime errors)
+
 ## What's Included
 
 ### 10 Specialized Agents
@@ -111,7 +150,7 @@ Task-type aware — adapts metrics and validation for classification, regression
 - **Pre-commit**: Python syntax check, secrets detection, test coverage validation
 - **Pre-deploy**: Deployment readiness checks (files, health endpoints, Docker, env vars)
 - **Post-EDA**: Extract metrics, flag data quality issues
-- **Post-dashboard**: Validate Streamlit syntax, check components, generate run scripts
+- **Post-dashboard**: Validate syntax (`ast.parse`), detect placeholders, import-level check, generate run scripts
 - **Post-workflow**: Summarize outputs, generate quick-start commands
 
 ## Installation
