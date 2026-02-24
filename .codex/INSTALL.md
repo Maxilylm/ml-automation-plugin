@@ -43,8 +43,9 @@ Enable ML automation skills in Codex via native skill discovery. Clone and symli
 | `ml-automation/team-analyze` | Quick multi-agent data analysis |
 | `ml-automation/team-review` | Multi-agent code review |
 | `ml-automation/status` | View workflow progress, agent states, and report bus contents |
+| `ml-automation/registry` | Inspect MLOps registries (model registry, feature store, experiments, data versions) |
 
-> **New in v1.2.0:** The `/status` command provides real-time visibility into workflow execution, including agent states, parallel group progress, and shared report bus contents.
+> **v1.3.1:** Report verification checkpoints enforce that every agent saves its report. Dashboard creation uses grounded instructions (no placeholders) with a smoke test loop. Post-dashboard hook validates syntax, placeholders, and imports.
 
 ## Tool Mapping
 

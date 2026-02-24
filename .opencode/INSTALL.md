@@ -72,6 +72,8 @@ use skill tool to load ml-automation/eda
 | `ml-automation/team-coldstart` | Full pipeline: raw data to deployed dashboard |
 | `ml-automation/team-analyze` | Quick multi-agent data analysis |
 | `ml-automation/team-review` | Multi-agent code review |
+| `ml-automation/status` | View workflow progress, agent states, and report bus contents |
+| `ml-automation/registry` | Inspect MLOps registries (model registry, feature store, experiments, data versions) |
 
 ## Updating
 
@@ -97,7 +99,7 @@ git pull
 ### Tool Mapping
 
 When skills reference Claude Code tools:
-- `TodoWrite` → `update_plan`
+- `TaskCreate`/`TaskUpdate`/`TaskList` → `update_plan`
 - `Task` with subagents → `@mention` syntax
 - `Skill` tool → OpenCode's native `skill` tool
 - File operations → your native tools
