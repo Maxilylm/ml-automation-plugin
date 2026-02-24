@@ -135,7 +135,24 @@ Spawn ALL THREE agents concurrently using multiple Task tool calls in a single m
    Output: Dashboard design recommendations + agent bus report
    ```
 
-**Wait for all three to complete before proceeding to Stage 3.**
+**Wait for all three to complete, then run Step 2b-verify.**
+
+#### Step 2b-verify: Report Bus Verification
+
+After all three parallel agents return, check that each wrote its report:
+
+```
+For each agent in [ml-theory-advisor, feature-engineering-analyst, frontend-ux-analyst]:
+  1. Check if .claude/reports/{agent}_report.json exists
+  2. If MISSING — re-spawn that agent ONCE with this prefix:
+     "REPORT MISSING — your prior run did not save a report.
+      You MUST call save_agent_report('{agent}', {{...}}) before finishing.
+      Re-read .claude/reports/eda-analyst_report.json and complete your analysis."
+  3. After the retry, check again. If still missing, log a warning:
+     "WARNING: {agent} report missing after retry — proceeding without it."
+```
+
+Only proceed to Stage 2c after verification completes.
 
 **Output:**
 ```markdown
@@ -381,7 +398,24 @@ Spawn ALL THREE review agents concurrently:
    Output: UX review report + agent bus report
    ```
 
-**Wait for all three to complete before proceeding to Stage 5c.**
+**Wait for all three to complete, then run Step 5b-verify.**
+
+#### Step 5b-verify: Report Bus Verification
+
+After all three review agents return, check that each wrote its report:
+
+```
+For each agent in [brutal-code-reviewer, ml-theory-advisor, frontend-ux-analyst]:
+  1. Check if .claude/reports/{agent}_report.json exists
+  2. If MISSING — re-spawn that agent ONCE with this prefix:
+     "REPORT MISSING — your prior run did not save a report.
+      You MUST call save_agent_report('{agent}', {{...}}) before finishing.
+      Re-read all reports in .claude/reports/ and complete your review."
+  3. After the retry, check again. If still missing, log a warning:
+     "WARNING: {agent} report missing after retry — proceeding without it."
+```
+
+Only proceed to Stage 5c after verification completes.
 
 ### Stage 5c: MLOps Registry Validation
 
@@ -418,59 +452,125 @@ Spawn ALL THREE review agents concurrently:
    - Lineage: complete ✓
    ```
 
+#### Step 5c-verify: Report Bus Verification
+
+After mlops-engineer returns, check that it wrote its report:
+
+```
+1. Check if .claude/reports/mlops-engineer_report.json exists
+2. If MISSING — re-spawn mlops-engineer ONCE with this prefix:
+   "REPORT MISSING — your prior run did not save a report.
+    You MUST call save_agent_report('mlops-engineer', {{...}}) before finishing.
+    Re-read all reports in .claude/reports/ and all registries in .claude/mlops/.
+    Complete your validation and save your report."
+3. After the retry, check again. If still missing, log a warning:
+   "WARNING: mlops-engineer report missing after retry — proceeding without it."
+```
+
 ### Stage 6: Streamlit Dashboard
 
-**Actions:**
-1. Create interactive Streamlit dashboard with all results
-2. Include visualizations from EDA and evaluation
-3. Add interactive filters and controls
-4. Include model predictions (ML) or data explorer (Analysis)
-5. Generate dashboard code
+#### Step 6a: Dashboard Creation (Grounded — No Placeholders)
 
-**Dashboard Components:**
+**Spawn developer agent** to create the dashboard. The prompt MUST include these rules:
+
+```
+Create an interactive Streamlit dashboard at dashboard/app.py.
+
+CRITICAL RULES — read these before writing any code:
+1. All variables MUST be defined before use. No undefined names like fig_overview, ml_mode, etc.
+2. No placeholder strings like "{count}", "{value}", "{Project}", "{accuracy}". Use ACTUAL data.
+3. BEFORE writing dashboard code, READ these reports for real values:
+   - .claude/reports/eda-analyst_report.json — row count, column count, column names, stats
+   - .claude/reports/feature-engineering-analyst_report.json — feature recommendations
+   - .claude/reports/ml-theory-advisor_report.json — methodology notes
+   - .claude/reports/frontend-ux-analyst_report.json — dashboard design recommendations
+   - Any model evaluation reports in reports/ directory
+4. Load data with pd.read_csv() and compute metrics at runtime — do NOT hardcode stats.
+5. Wrap model-specific sections in try/except or os.path.exists() checks so the
+   dashboard works even if model artifacts are missing.
+6. Every st.plotly_chart() call must use a figure created in the SAME scope.
+7. Use st.set_page_config(page_title="Data Dashboard", layout="wide") at the top.
+
+DASHBOARD STRUCTURE:
+- Sidebar: filters derived from actual categorical columns in the dataset
+- Tab 1 (Overview): KPI metrics computed from df at runtime, summary charts
+- Tab 2 (Analysis): Distribution and correlation charts built from df
+- Tab 3 (Results): Model performance or key insights (conditional on mode)
+- Tab 4 (Interactive): Predictions form or data explorer
+
+Output: dashboard/app.py with all variables defined and no placeholders.
+```
+
+#### Step 6b: Dashboard Smoke Test (max 2 iterations)
+
+After the developer agent writes `dashboard/app.py`, run this validation:
 
 ```python
-# dashboard/app.py
-import streamlit as st
-import pandas as pd
-import plotly.express as px
+import ast, re, importlib, sys
 
-st.set_page_config(page_title="{Project} Dashboard", layout="wide")
+dashboard_path = "dashboard/app.py"
+errors = []
 
-# Sidebar filters
-st.sidebar.header("Filters")
+# 1. Syntax check via ast.parse
+with open(dashboard_path, "r") as f:
+    source = f.read()
+try:
+    ast.parse(source)
+except SyntaxError as e:
+    errors.append(f"SyntaxError: {e}")
 
-# Main content tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Analysis", "Results", "Predictions"])
+# 2. Unresolved placeholder check
+placeholders = re.findall(r'"\{[^}]+\}"', source)
+if placeholders:
+    errors.append(f"Unresolved placeholders found: {placeholders}")
 
-with tab1:
-    # KPI metrics
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Records", "{count}")
-    col2.metric("Key Metric 1", "{value}")
-    col3.metric("Key Metric 2", "{value}")
-    col4.metric("Model Accuracy", "{accuracy}%")  # ML mode only
+# 3. Import-level check (catches NameError/ImportError but tolerates Streamlit runtime)
+if not errors:
+    try:
+        # Temporarily mock streamlit to avoid needing a running server
+        import types
+        mock_st = types.ModuleType("streamlit")
+        sys.modules["streamlit"] = mock_st
+        spec = importlib.util.spec_from_file_location("dashboard_check", dashboard_path)
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+        except (NameError, ImportError) as e:
+            errors.append(f"Runtime error: {e}")
+        except Exception:
+            pass  # Tolerate other errors (Streamlit runtime, missing data, etc.)
+        finally:
+            sys.modules.pop("streamlit", None)
+    except Exception as e:
+        errors.append(f"Import test failed: {e}")
 
-    # Overview charts
-    st.plotly_chart(fig_overview)
+if errors:
+    print("DASHBOARD VALIDATION FAILED:")
+    for err in errors:
+        print(f"  - {err}")
+else:
+    print("DASHBOARD VALIDATION PASSED")
+```
 
-with tab2:
-    # EDA visualizations
-    st.subheader("Data Distribution")
-    st.plotly_chart(fig_distributions)
+**Iteration loop:**
+```
+iteration = 0
+max_iterations = 2
 
-    st.subheader("Correlations")
-    st.plotly_chart(fig_correlations)
+while validation fails AND iteration < max_iterations:
+  Re-spawn developer with:
+    "DASHBOARD SMOKE TEST FAILED — fix these errors:
+     {error_list}
+     Read dashboard/app.py, fix the issues, and rewrite it.
+     Remember: no placeholders, all variables must be defined, load real data."
+  Run validation again
+  iteration += 1
 
-with tab3:
-    # Results (ML: model performance / Analysis: key insights)
-    st.subheader("Key Findings")
-    # Feature importance or insight cards
-
-with tab4:
-    # Interactive predictions (ML) or data explorer (Analysis)
-    st.subheader("Make Predictions" if ml_mode else "Explore Data")
-    # Input form for predictions or data filters
+If still failing after max_iterations:
+  Write a minimal fallback dashboard:
+    - Loads data, shows df.describe(), basic bar chart
+    - No model dependencies, no placeholders
+  Log: "WARNING: Dashboard fell back to minimal version after {max_iterations} failed fixes"
 ```
 
 **Output:**
@@ -478,9 +578,9 @@ with tab4:
 ## Stage 6: Streamlit Dashboard ✓
 
 - Dashboard created: dashboard/app.py
-- Components: Overview, Analysis, Results, Predictions
-- Visualizations: 8 interactive charts
-- Filters: Date range, Category, Region
+- Smoke test: PASSED (iteration {n})
+- Components: Overview, Analysis, Results, Interactive
+- All variables grounded — no placeholders
 
 ### To Run Dashboard:
 ```bash

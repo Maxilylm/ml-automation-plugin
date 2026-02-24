@@ -258,6 +258,23 @@ Provide specific, implementable recommendations.
 
 After feature analysis completes, features are registered in `.claude/mlops/feature-store.json`.
 
+### Step 4b: Report Bus Verification
+
+After both parallel agents return, check that each wrote its report:
+
+```
+For each agent in [ml-theory-advisor, feature-engineering-analyst]:
+  1. Check if .claude/reports/{agent}_report.json exists
+  2. If MISSING — re-spawn that agent ONCE with this prefix:
+     "REPORT MISSING — your prior run did not save a report.
+      You MUST call save_agent_report('{agent}', {{...}}) before finishing.
+      Re-read .claude/reports/eda-analyst_report.json and complete your analysis."
+  3. After the retry, check again. If still missing, log a warning:
+     "WARNING: {agent} report missing after retry — proceeding without it."
+```
+
+Only proceed to Step 5 after verification completes.
+
 ### Step 5: Summary Report
 
 Compile findings into a comprehensive report:
