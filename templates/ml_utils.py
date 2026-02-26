@@ -911,3 +911,158 @@ def load_data_versions(search_dirs=None):
             except (json.JSONDecodeError, KeyError):
                 continue
     return list(versions.values())
+
+
+# =============================================================================
+# 10. LESSONS LEARNED
+# =============================================================================
+
+LESSONS_FILENAME = "lessons-learned.json"
+LESSONS_SCHEMA_VERSION = "1.0"
+
+PLATFORM_LESSONS_DIRS = [
+    ".claude",
+    ".cursor",
+    ".codex",
+    ".opencode",
+]
+
+
+def save_lesson(lesson_data, output_dirs=None):
+    """
+    Record a lesson learned. If a similar lesson exists (same stage + title substring match),
+    increment times_encountered instead of creating a duplicate.
+
+    Args:
+        lesson_data: Dict with keys: stage, category (mistake|solution|pattern|tip),
+            severity (high|medium|low), title, description, trigger, resolution,
+            tags (list), applicable_to (list of command names)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_LESSONS_DIRS
+
+    now = datetime.now(timezone.utc)
+    store = _load_lessons_store(output_dirs)
+
+    title = lesson_data.get("title", "")
+    stage = lesson_data.get("stage", "")
+
+    # Deduplication: find existing lesson with same stage and overlapping title
+    existing_idx = None
+    for i, lesson in enumerate(store["lessons"]):
+        if lesson.get("stage") == stage and (
+            title.lower() in lesson.get("title", "").lower()
+            or lesson.get("title", "").lower() in title.lower()
+        ):
+            existing_idx = i
+            break
+
+    if existing_idx is not None:
+        store["lessons"][existing_idx]["times_encountered"] += 1
+        store["lessons"][existing_idx]["last_encountered"] = now.isoformat()
+        if lesson_data.get("resolution"):
+            store["lessons"][existing_idx]["resolution"] = lesson_data["resolution"]
+    else:
+        lesson_id = f"lesson_{now.strftime('%Y%m%d_%H%M%S')}"
+        entry = {
+            "lesson_id": lesson_id,
+            "created_at": now.isoformat(),
+            "stage": stage,
+            "category": lesson_data.get("category", "tip"),
+            "severity": lesson_data.get("severity", "medium"),
+            "title": title,
+            "description": lesson_data.get("description", ""),
+            "trigger": lesson_data.get("trigger", ""),
+            "resolution": lesson_data.get("resolution", ""),
+            "tags": lesson_data.get("tags", []),
+            "times_encountered": 1,
+            "last_encountered": now.isoformat(),
+            "applicable_to": lesson_data.get("applicable_to", []),
+        }
+        store["lessons"].append(entry)
+
+    _save_lessons_store(store, output_dirs)
+    return store
+
+
+def load_lessons(search_dirs=None):
+    """Load all lessons from the lessons-learned store. Returns list of lesson dicts."""
+    store = _load_lessons_store(search_dirs)
+    return store.get("lessons", [])
+
+
+def get_relevant_lessons(stage=None, tags=None, search_dirs=None):
+    """
+    Get lessons relevant to a specific stage or tags.
+    Returns list sorted by severity (high first) then recency.
+    """
+    lessons = load_lessons(search_dirs)
+
+    if stage:
+        lessons = [l for l in lessons if l.get("stage") == stage or stage in l.get("tags", [])]
+
+    if tags:
+        tag_set = set(tags)
+        lessons = [l for l in lessons if tag_set & set(l.get("tags", []))]
+
+    severity_order = {"high": 0, "medium": 1, "low": 2}
+    lessons.sort(key=lambda l: (
+        severity_order.get(l.get("severity", "low"), 2),
+        -(l.get("times_encountered", 0)),
+    ))
+
+    return lessons
+
+
+def format_lessons_for_prompt(lessons, max_lessons=5):
+    """Format lessons as a string suitable for including in agent prompts."""
+    if not lessons:
+        return ""
+
+    lines = ["LESSONS FROM PRIOR RUNS (avoid these mistakes, follow these patterns):"]
+    for lesson in lessons[:max_lessons]:
+        category = lesson.get("category", "tip")
+        title = lesson.get("title", "Unknown")
+        resolution = lesson.get("resolution", "")
+        times = lesson.get("times_encountered", 1)
+        severity = lesson.get("severity", "medium")
+
+        line = f"- [{severity.upper()}] ({category}) {title}"
+        if resolution:
+            line += f" → FIX: {resolution}"
+        if times > 1:
+            line += f" (encountered {times}x)"
+        lines.append(line)
+
+    return "\n".join(lines)
+
+
+def _load_lessons_store(search_dirs=None):
+    """Load the lessons store from the first directory that has it."""
+    if search_dirs is None:
+        search_dirs = PLATFORM_LESSONS_DIRS
+
+    for d in search_dirs:
+        path = os.path.join(d, LESSONS_FILENAME)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    return {"version": LESSONS_SCHEMA_VERSION, "lessons": []}
+
+
+def _save_lessons_store(store, output_dirs=None):
+    """Save the lessons store to all platform directories."""
+    if output_dirs is None:
+        output_dirs = PLATFORM_LESSONS_DIRS
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, LESSONS_FILENAME)
+        with open(path, "w") as f:
+            json.dump(store, f, indent=2, default=str)
