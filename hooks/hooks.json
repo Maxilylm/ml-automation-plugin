@@ -69,6 +69,15 @@
         ]
       },
       {
+        "matcher": "developer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-stage-check.sh preprocessing"
+          }
+        ]
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
