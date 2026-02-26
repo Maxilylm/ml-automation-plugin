@@ -1234,3 +1234,71 @@ def _validate_dashboard_output(context):
         errors.append(f"Unresolved placeholders: {placeholders}")
 
     return len(errors) == 0, errors
+
+
+# =============================================================================
+# 12. PRE-STAGE PLANS
+# =============================================================================
+
+def save_stage_plan(stage, plan_data, output_dirs=None):
+    """
+    Save a pre-stage plan to the report bus directories.
+
+    Args:
+        stage: Stage name (e.g., 'analysis', 'preprocessing', 'training')
+        plan_data: Dict with keys: stage, stage_number, objectives (list),
+            approach (str), risks (list), success_criteria (list),
+            lessons_applied (list), context_from_prior_stages (dict)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    plan = {
+        "stage": stage,
+        "stage_number": plan_data.get("stage_number", 0),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "objectives": plan_data.get("objectives", []),
+        "approach": plan_data.get("approach", ""),
+        "risks": plan_data.get("risks", []),
+        "success_criteria": plan_data.get("success_criteria", []),
+        "lessons_applied": plan_data.get("lessons_applied", []),
+        "context_from_prior_stages": plan_data.get("context_from_prior_stages", {}),
+    }
+
+    filename = f"stage_plan_{stage}.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(plan, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_stage_plan(stage, search_dirs=None):
+    """
+    Load the pre-stage plan for a specific stage.
+
+    Returns:
+        dict with plan data, or None if not found
+    """
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    filename = f"stage_plan_{stage}.json"
+
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    return None
