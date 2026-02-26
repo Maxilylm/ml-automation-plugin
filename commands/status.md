@@ -23,10 +23,11 @@ Look for `*_report.json` files in these directories (check all that exist):
 If the project has `ml_utils.py` available, use:
 
 ```python
-from ml_utils import get_workflow_status, load_agent_reports
+from ml_utils import get_workflow_status, load_agent_reports, load_lessons
 
 status = get_workflow_status()
 reports = load_agent_reports()
+lessons = load_lessons()
 ```
 
 Otherwise, manually scan the directories and read JSON files.
@@ -50,6 +51,11 @@ Format the output as:
 
 ### Cross-Agent Insights
 - {from_agent} recommends: {action} → {target_agent} ({priority})
+
+### Lessons Learned ({count} total)
+- High severity: {high_count}
+- Most recent: {latest_lesson_title} ({last_encountered})
+- Most recurring: {most_encountered_title} ({times}x)
 ```
 
 ### Step 3: Handle Flags
@@ -65,6 +71,7 @@ Format the output as:
 | `--agent` | (none) | Show specific agent's full report |
 | `--pending` | false | Show only pending items |
 | `--insights` | false | Show only cross-agent insights |
+| `--lessons` | false | Show full lessons learned listing |
 
 ## When No Reports Exist
 

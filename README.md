@@ -4,6 +4,61 @@ End-to-end machine learning automation workflow for AI coding assistants. Takes 
 
 Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
 
+## What's New in v1.4.0
+
+### Iterative Self-Check Loops
+
+Every workflow stage now validates its output before proceeding. If validation fails, the agent is re-spawned with error feedback (configurable max iterations). This generalizes the dashboard smoke test to ALL stages:
+
+- **EDA**: Report completeness, required keys, non-empty statistics
+- **Feature Engineering**: Features list populated, no duplicates, leakage assessed
+- **Preprocessing**: Pipeline file exists, tests exist
+- **Training**: Model artifact present, experiment logged
+- **Evaluation**: Evaluation report complete
+- **Dashboard**: Syntax, placeholders, imports (existing enhanced)
+
+```bash
+/team coldstart data.csv --max-check 3   # Allow 3 retry iterations
+/team coldstart data.csv --max-check 0   # Skip self-checks
+```
+
+### Pre-Stage Reflection
+
+Before each major stage, a domain expert agent plans the approach by reading all prior reports and lessons. The executing agent reads this plan before starting, leading to better first-attempt quality.
+
+| Stage | Reflector |
+|-------|-----------|
+| Analysis | ml-theory-advisor |
+| Processing | ml-theory-advisor |
+| Modeling | ml-theory-advisor |
+| Evaluation | ml-theory-advisor |
+| Dashboard | frontend-ux-analyst |
+| Production | mlops-engineer |
+
+```bash
+/team coldstart data.csv                    # With pre-reflection (default)
+/team coldstart data.csv --no-pre-reflect   # Skip pre-stage reflection
+```
+
+### Lessons Learned System
+
+Persistent knowledge base that records mistakes, solutions, and successful patterns. Lessons are:
+- **Written** when self-checks fail, reflection gates request revision, or agents recover from errors
+- **Consulted** before each stage in pre-reflection prompts and agent spawn prompts
+- **Deduplicated** automatically (same stage + similar title → increment counter)
+- **Persisted** across workflow runs in `.claude/lessons-learned.json`
+
+```bash
+/status --lessons   # View all recorded lessons
+```
+
+### New Utility Functions
+
+Added to `ml_utils.py`:
+- `save_lesson()`, `load_lessons()`, `get_relevant_lessons()`, `format_lessons_for_prompt()`
+- `validate_stage_output()` with per-stage validators
+- `save_stage_plan()`, `load_stage_plan()`
+
 ## What's New in v1.2.0
 
 ### Shared Report Bus

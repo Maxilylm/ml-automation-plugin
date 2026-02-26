@@ -911,3 +911,422 @@ def load_data_versions(search_dirs=None):
             except (json.JSONDecodeError, KeyError):
                 continue
     return list(versions.values())
+
+
+# =============================================================================
+# 10. LESSONS LEARNED
+# =============================================================================
+
+LESSONS_FILENAME = "lessons-learned.json"
+LESSONS_SCHEMA_VERSION = "1.0"
+
+PLATFORM_LESSONS_DIRS = [
+    ".claude",
+    ".cursor",
+    ".codex",
+    ".opencode",
+]
+
+
+def save_lesson(lesson_data, output_dirs=None):
+    """
+    Record a lesson learned. If a similar lesson exists (same stage + title substring match),
+    increment times_encountered instead of creating a duplicate.
+
+    Args:
+        lesson_data: Dict with keys: stage, category (mistake|solution|pattern|tip),
+            severity (high|medium|low), title, description, trigger, resolution,
+            tags (list), applicable_to (list of command names)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_LESSONS_DIRS
+
+    now = datetime.now(timezone.utc)
+    store = _load_lessons_store(output_dirs)
+
+    title = lesson_data.get("title", "")
+    stage = lesson_data.get("stage", "")
+
+    # Deduplication: find existing lesson with same stage and overlapping title
+    existing_idx = None
+    for i, lesson in enumerate(store["lessons"]):
+        if lesson.get("stage") == stage and (
+            title.lower() in lesson.get("title", "").lower()
+            or lesson.get("title", "").lower() in title.lower()
+        ):
+            existing_idx = i
+            break
+
+    if existing_idx is not None:
+        store["lessons"][existing_idx]["times_encountered"] += 1
+        store["lessons"][existing_idx]["last_encountered"] = now.isoformat()
+        if lesson_data.get("resolution"):
+            store["lessons"][existing_idx]["resolution"] = lesson_data["resolution"]
+    else:
+        lesson_id = f"lesson_{now.strftime('%Y%m%d_%H%M%S')}"
+        entry = {
+            "lesson_id": lesson_id,
+            "created_at": now.isoformat(),
+            "stage": stage,
+            "category": lesson_data.get("category", "tip"),
+            "severity": lesson_data.get("severity", "medium"),
+            "title": title,
+            "description": lesson_data.get("description", ""),
+            "trigger": lesson_data.get("trigger", ""),
+            "resolution": lesson_data.get("resolution", ""),
+            "tags": lesson_data.get("tags", []),
+            "times_encountered": 1,
+            "last_encountered": now.isoformat(),
+            "applicable_to": lesson_data.get("applicable_to", []),
+        }
+        store["lessons"].append(entry)
+
+    _save_lessons_store(store, output_dirs)
+    return store
+
+
+def load_lessons(search_dirs=None):
+    """Load all lessons from the lessons-learned store. Returns list of lesson dicts."""
+    store = _load_lessons_store(search_dirs)
+    return store.get("lessons", [])
+
+
+def get_relevant_lessons(stage=None, tags=None, command=None, search_dirs=None):
+    """
+    Get lessons relevant to a specific stage, tags, or command.
+    Returns list sorted by severity (high first) then frequency.
+    """
+    lessons = load_lessons(search_dirs)
+
+    if stage:
+        lessons = [l for l in lessons if l.get("stage") == stage or stage in l.get("tags", [])]
+
+    if tags:
+        tag_set = set(tags)
+        lessons = [l for l in lessons if tag_set & set(l.get("tags", []))]
+
+    if command:
+        lessons = [l for l in lessons if not l.get("applicable_to") or command in l["applicable_to"]]
+
+    severity_order = {"high": 0, "medium": 1, "low": 2}
+    lessons.sort(key=lambda l: (
+        severity_order.get(l.get("severity", "low"), 2),
+        -(l.get("times_encountered", 0)),
+    ))
+
+    return lessons
+
+
+def format_lessons_for_prompt(lessons, max_lessons=5):
+    """Format lessons as a string suitable for including in agent prompts."""
+    if not lessons:
+        return ""
+
+    lines = ["LESSONS FROM PRIOR RUNS (avoid these mistakes, follow these patterns):"]
+    for lesson in lessons[:max_lessons]:
+        category = lesson.get("category", "tip")
+        title = lesson.get("title", "Unknown")
+        resolution = lesson.get("resolution", "")
+        times = lesson.get("times_encountered", 1)
+        severity = lesson.get("severity", "medium")
+
+        line = f"- [{severity.upper()}] ({category}) {title}"
+        if resolution:
+            line += f" → FIX: {resolution}"
+        if times > 1:
+            line += f" (encountered {times}x)"
+        lines.append(line)
+
+    return "\n".join(lines)
+
+
+def _load_lessons_store(search_dirs=None):
+    """Load the most recent lessons store across all platform directories."""
+    if search_dirs is None:
+        search_dirs = PLATFORM_LESSONS_DIRS
+
+    latest = None
+    latest_mtime = 0
+    for d in search_dirs:
+        path = os.path.join(d, LESSONS_FILENAME)
+        if os.path.exists(path):
+            try:
+                mtime = os.path.getmtime(path)
+                with open(path) as f:
+                    data = json.load(f)
+                if mtime > latest_mtime:
+                    latest = data
+                    latest_mtime = mtime
+            except (json.JSONDecodeError, KeyError, OSError):
+                continue
+
+    return latest or {"version": LESSONS_SCHEMA_VERSION, "lessons": []}
+
+
+def _save_lessons_store(store, output_dirs=None):
+    """Save the lessons store to all platform directories."""
+    if output_dirs is None:
+        output_dirs = PLATFORM_LESSONS_DIRS
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, LESSONS_FILENAME)
+        with open(path, "w") as f:
+            json.dump(store, f, indent=2, default=str)
+
+
+# =============================================================================
+# 11. STAGE VALIDATION (Iterative Self-Check)
+# =============================================================================
+
+STAGE_VALIDATORS = {
+    "eda": "_validate_eda_output",
+    "feature-engineering": "_validate_feature_engineering_output",
+    "preprocessing": "_validate_preprocessing_output",
+    "training": "_validate_training_output",
+    "evaluation": "_validate_evaluation_output",
+    "dashboard": "_validate_dashboard_output",
+}
+
+
+def validate_stage_output(stage, context=None):
+    """
+    Run stage-specific validation checks.
+
+    Args:
+        stage: Stage name (eda, feature-engineering, preprocessing, training, evaluation, dashboard)
+        context: Optional dict with stage-specific context (e.g., file paths, data)
+
+    Returns:
+        tuple: (passed: bool, errors: list[str])
+    """
+    if context is None:
+        context = {}
+
+    validator_name = STAGE_VALIDATORS.get(stage)
+    if validator_name is None:
+        return True, []
+
+    validator = globals().get(validator_name)
+    if validator is None:
+        return True, []
+
+    return validator(context)
+
+
+def _validate_eda_output(context):
+    """Validate EDA stage output."""
+    errors = []
+    report = load_eda_report()
+
+    if report is None:
+        errors.append("EDA report not found in any report directory")
+        return False, errors
+
+    required_keys = ["shape", "column_types"]
+    for key in required_keys:
+        if key not in report:
+            errors.append(f"EDA report missing required key: '{key}'")
+
+    shape = report.get("shape", {})
+    if not shape.get("rows") or not shape.get("cols"):
+        errors.append("EDA report has empty or zero shape (rows/cols)")
+
+    if not report.get("numerical_stats") and not report.get("categorical_stats"):
+        errors.append("EDA report has no numerical or categorical statistics")
+
+    if "quality_issues" not in report:
+        errors.append("EDA report missing quality_issues assessment")
+
+    return len(errors) == 0, errors
+
+
+def _validate_feature_engineering_output(context):
+    """Validate feature engineering output."""
+    errors = []
+    reports = load_agent_reports()
+    fe_report = reports.get("feature-engineering-analyst")
+
+    if fe_report is None:
+        errors.append("Feature engineering report not found")
+        return False, errors
+
+    findings = fe_report.get("findings", {})
+    details = findings.get("details", findings)
+
+    features = []
+    if isinstance(details, dict):
+        features = details.get("features", details.get("recommended_features", []))
+        if not features:
+            errors.append("No features recommended in feature engineering report")
+
+    # Check for duplicate feature IDs
+    if features and isinstance(features, list):
+        feature_ids = [f.get("feature_id", f.get("name", "")) for f in features if isinstance(f, dict)]
+        duplicates = [fid for fid in feature_ids if feature_ids.count(fid) > 1]
+        if duplicates:
+            errors.append(f"Duplicate feature IDs: {list(set(duplicates))}")
+
+        # Check leakage_risk is assessed
+        missing_leakage = [
+            f.get("feature_id", f.get("name", "?"))
+            for f in features if isinstance(f, dict) and not f.get("leakage_risk")
+        ]
+        if missing_leakage:
+            errors.append(f"Features missing leakage_risk assessment: {missing_leakage[:5]}")
+
+    recs = fe_report.get("recommendations", [])
+    if not recs and not features:
+        errors.append("Feature engineering report has no recommendations or details")
+
+    return len(errors) == 0, errors
+
+
+def _validate_preprocessing_output(context):
+    """Validate preprocessing stage output."""
+    errors = []
+
+    processing_paths = ["src/processing.py", "processing.py"]
+    found = any(os.path.exists(p) for p in processing_paths)
+    if not found:
+        errors.append("Processing pipeline file not found (expected src/processing.py)")
+
+    test_paths = ["tests/unit/test_processing.py", "tests/test_processing.py"]
+    found_test = any(os.path.exists(p) for p in test_paths)
+    if not found_test:
+        errors.append("No test file found for processing pipeline")
+
+    return len(errors) == 0, errors
+
+
+def _validate_training_output(context):
+    """Validate training stage output."""
+    errors = []
+
+    model_paths = ["models/", "src/models/"]
+    import glob as globmod
+    model_files = []
+    for mp in model_paths:
+        model_files.extend(globmod.glob(os.path.join(mp, "*.joblib")))
+        model_files.extend(globmod.glob(os.path.join(mp, "*.pkl")))
+        model_files.extend(globmod.glob(os.path.join(mp, "*.pickle")))
+    if not model_files:
+        errors.append("No model artifact found (expected .joblib or .pkl in models/)")
+
+    experiments = load_experiments()
+    if not experiments:
+        errors.append("No experiment logged in MLOps registry")
+
+    return len(errors) == 0, errors
+
+
+def _validate_evaluation_output(context):
+    """Validate evaluation stage output."""
+    errors = []
+
+    reports = load_agent_reports()
+    has_eval = any("eval" in name.lower() or "theory" in name.lower() for name in reports)
+    if not has_eval:
+        import glob as globmod
+        eval_files = globmod.glob("reports/*eval*") + globmod.glob("reports/*performance*")
+        if not eval_files:
+            errors.append("No evaluation report or metrics file found")
+
+    return len(errors) == 0, errors
+
+
+def _validate_dashboard_output(context):
+    """Validate dashboard output (supplements the post-dashboard hook)."""
+    import ast
+    import re
+
+    errors = []
+    dashboard_path = context.get("dashboard_path", "dashboard/app.py")
+
+    if not os.path.exists(dashboard_path):
+        errors.append(f"Dashboard file not found: {dashboard_path}")
+        return False, errors
+
+    with open(dashboard_path) as f:
+        source = f.read()
+
+    try:
+        ast.parse(source)
+    except SyntaxError as e:
+        errors.append(f"Dashboard syntax error: {e}")
+
+    placeholders = re.findall(r'"\{[A-Za-z_][A-Za-z0-9_]*\}"', source)
+    if placeholders:
+        errors.append(f"Unresolved placeholders: {placeholders}")
+
+    return len(errors) == 0, errors
+
+
+# =============================================================================
+# 12. PRE-STAGE PLANS
+# =============================================================================
+
+def save_stage_plan(stage, plan_data, output_dirs=None):
+    """
+    Save a pre-stage plan to the report bus directories.
+
+    Args:
+        stage: Stage name (e.g., 'analysis', 'preprocessing', 'training')
+        plan_data: Dict with keys: stage, stage_number, objectives (list),
+            approach (str), risks (list), success_criteria (list),
+            lessons_applied (list), context_from_prior_stages (dict)
+    """
+    from datetime import datetime, timezone
+
+    if output_dirs is None:
+        output_dirs = PLATFORM_REPORT_DIRS
+
+    plan = {
+        "stage": stage,
+        "stage_number": plan_data.get("stage_number", 0),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "objectives": plan_data.get("objectives", []),
+        "approach": plan_data.get("approach", ""),
+        "risks": plan_data.get("risks", []),
+        "success_criteria": plan_data.get("success_criteria", []),
+        "lessons_applied": plan_data.get("lessons_applied", []),
+        "context_from_prior_stages": plan_data.get("context_from_prior_stages", {}),
+    }
+
+    filename = f"stage_plan_{stage}.json"
+    paths_written = []
+
+    for d in output_dirs:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, filename)
+        with open(path, "w") as f:
+            json.dump(plan, f, indent=2, default=str)
+        paths_written.append(path)
+
+    return paths_written
+
+
+def load_stage_plan(stage, search_dirs=None):
+    """
+    Load the pre-stage plan for a specific stage.
+
+    Returns:
+        dict with plan data, or None if not found
+    """
+    if search_dirs is None:
+        search_dirs = PLATFORM_REPORT_DIRS
+
+    filename = f"stage_plan_{stage}.json"
+
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    return None
