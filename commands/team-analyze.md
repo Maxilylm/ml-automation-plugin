@@ -22,6 +22,20 @@ The `/team analyze` command runs analysis stages only:
 3. **Recommendations** - Column/feature suggestions based on data type
 4. **Summary Report** - Consolidated findings and recommendations
 
+## Stage Flow Pattern (v1.4.0)
+
+Each analysis step follows this enhanced flow:
+
+```
+1. LOAD LESSONS — get_relevant_lessons(stage) from lessons-learned.json
+2. PRE-STAGE REFLECTION — ml-theory-advisor reads reports + lessons, produces stage plan
+3. EXECUTE — agent runs the step, reading the stage plan first
+4. SELF-CHECK — validate_stage_output() runs deterministic checks
+   └── If fails: re-spawn agent with error feedback (max --max-check iterations)
+   └── On persistent failure: save_lesson() recording the issue
+5. PROCEED to next step
+```
+
 ## Usage
 
 ```bash
@@ -66,6 +80,22 @@ print(f"Dtypes: {df.dtypes.value_counts().to_dict()}")
 - Has at least 2 columns and 10 rows
 - Columns have interpretable names
 - No entirely empty columns
+
+### Step 1b: Pre-Stage Reflection (unless --no-pre-reflect)
+
+Spawn **ml-theory-advisor** in pre-reflection mode:
+
+```
+PRE-STAGE REFLECTION — Analysis Workflow
+
+Read .claude/lessons-learned.json for relevant lessons from past runs.
+Plan what EDA should focus on based on the data file and any prior lessons.
+
+Save your plan using save_stage_plan("analysis", {...})
+```
+
+After the plan is saved, include in subsequent agent prompts:
+"FIRST: Read the stage plan at .claude/reports/stage_plan_analysis.json."
 
 ### Step 2: EDA (Invoke eda-analyst)
 
@@ -130,6 +160,10 @@ Output a structured report with findings and recommendations.
 ```
 
 After EDA completes, eda-analyst generates a data fingerprint stored in `.claude/mlops/data-versions/`.
+
+#### Step 2-check: EDA Self-Check
+
+Run `validate_stage_output("eda")`. If validation fails, re-spawn eda-analyst with error feedback (max `--max-check` iterations). On persistent failure, `save_lesson()` documenting the issue.
 
 ### Step 3: Leakage Review (Invoke ml-theory-advisor)
 
@@ -275,6 +309,10 @@ For each agent in [ml-theory-advisor, feature-engineering-analyst]:
 
 Only proceed to Step 5 after verification completes.
 
+#### Step 4b-check: Feature Engineering Self-Check
+
+Run `validate_stage_output("feature-engineering")`. If validation fails, re-spawn feature-engineering-analyst with error feedback (max `--max-check` iterations).
+
 ### Step 5: Summary Report
 
 Compile findings into a comprehensive report:
@@ -300,6 +338,10 @@ Data leakage risks and mitigation strategies.
 ## Feature Engineering Plan
 Prioritized list of features to create.
 
+## Lessons Applied
+- Lessons consulted this run: {count}
+- New lessons recorded: {new_count}
+
 ## Recommendations
 1. Immediate actions
 2. Modeling suggestions
@@ -320,6 +362,9 @@ Prioritized list of features to create.
 | `--output` | reports/ | Output directory for report |
 | `--format` | markdown | Report format (md, html, pdf) |
 | `--max-reflect` | 2 | Maximum reflection iterations (0 to skip) |
+| `--max-check` | 2 | Maximum self-check iterations per stage |
+| `--no-pre-reflect` | false | Skip pre-stage reflection planning |
+| `--no-lessons` | false | Skip lessons consultation |
 
 ## Agent Coordination (v1.2.0 — Report Bus)
 
