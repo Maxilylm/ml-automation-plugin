@@ -3,8 +3,6 @@
 # Runs stage-specific validation checks using ml_utils.py
 # Usage: bash post-stage-check.sh <stage_name> [context_json]
 
-set -e
-
 STAGE="${1:-}"
 CONTEXT="${2:-{}}"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -32,13 +30,14 @@ fi
 
 ML_UTILS_DIR=$(dirname "$ML_UTILS")
 
-# Run validation
-python3 -c "
-import sys, json
+# Run validation — pass context via env var to avoid shell injection
+RESULT=0
+CONTEXT_JSON="$CONTEXT" python3 -c "
+import sys, json, os
 sys.path.insert(0, '$ML_UTILS_DIR')
 from ml_utils import validate_stage_output
 
-context = json.loads('$CONTEXT')
+context = json.loads(os.environ.get('CONTEXT_JSON', '{}'))
 passed, errors = validate_stage_output('$STAGE', context)
 
 if passed:
@@ -48,9 +47,7 @@ else:
     for err in errors:
         print(f'    - {err}')
     sys.exit(1)
-"
-
-RESULT=$?
+" || RESULT=$?
 
 # Log
 mkdir -p .claude

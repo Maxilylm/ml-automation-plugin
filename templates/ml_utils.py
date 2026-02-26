@@ -993,10 +993,10 @@ def load_lessons(search_dirs=None):
     return store.get("lessons", [])
 
 
-def get_relevant_lessons(stage=None, tags=None, search_dirs=None):
+def get_relevant_lessons(stage=None, tags=None, command=None, search_dirs=None):
     """
-    Get lessons relevant to a specific stage or tags.
-    Returns list sorted by severity (high first) then recency.
+    Get lessons relevant to a specific stage, tags, or command.
+    Returns list sorted by severity (high first) then frequency.
     """
     lessons = load_lessons(search_dirs)
 
@@ -1006,6 +1006,9 @@ def get_relevant_lessons(stage=None, tags=None, search_dirs=None):
     if tags:
         tag_set = set(tags)
         lessons = [l for l in lessons if tag_set & set(l.get("tags", []))]
+
+    if command:
+        lessons = [l for l in lessons if not l.get("applicable_to") or command in l["applicable_to"]]
 
     severity_order = {"high": 0, "medium": 1, "low": 2}
     lessons.sort(key=lambda l: (
@@ -1040,20 +1043,26 @@ def format_lessons_for_prompt(lessons, max_lessons=5):
 
 
 def _load_lessons_store(search_dirs=None):
-    """Load the lessons store from the first directory that has it."""
+    """Load the most recent lessons store across all platform directories."""
     if search_dirs is None:
         search_dirs = PLATFORM_LESSONS_DIRS
 
+    latest = None
+    latest_mtime = 0
     for d in search_dirs:
         path = os.path.join(d, LESSONS_FILENAME)
         if os.path.exists(path):
             try:
+                mtime = os.path.getmtime(path)
                 with open(path) as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, KeyError):
+                    data = json.load(f)
+                if mtime > latest_mtime:
+                    latest = data
+                    latest_mtime = mtime
+            except (json.JSONDecodeError, KeyError, OSError):
                 continue
 
-    return {"version": LESSONS_SCHEMA_VERSION, "lessons": []}
+    return latest or {"version": LESSONS_SCHEMA_VERSION, "lessons": []}
 
 
 def _save_lessons_store(store, output_dirs=None):
@@ -1128,6 +1137,9 @@ def _validate_eda_output(context):
     if not report.get("numerical_stats") and not report.get("categorical_stats"):
         errors.append("EDA report has no numerical or categorical statistics")
 
+    if "quality_issues" not in report:
+        errors.append("EDA report missing quality_issues assessment")
+
     return len(errors) == 0, errors
 
 
@@ -1144,13 +1156,29 @@ def _validate_feature_engineering_output(context):
     findings = fe_report.get("findings", {})
     details = findings.get("details", findings)
 
+    features = []
     if isinstance(details, dict):
         features = details.get("features", details.get("recommended_features", []))
         if not features:
             errors.append("No features recommended in feature engineering report")
 
+    # Check for duplicate feature IDs
+    if features and isinstance(features, list):
+        feature_ids = [f.get("feature_id", f.get("name", "")) for f in features if isinstance(f, dict)]
+        duplicates = [fid for fid in feature_ids if feature_ids.count(fid) > 1]
+        if duplicates:
+            errors.append(f"Duplicate feature IDs: {list(set(duplicates))}")
+
+        # Check leakage_risk is assessed
+        missing_leakage = [
+            f.get("feature_id", f.get("name", "?"))
+            for f in features if isinstance(f, dict) and not f.get("leakage_risk")
+        ]
+        if missing_leakage:
+            errors.append(f"Features missing leakage_risk assessment: {missing_leakage[:5]}")
+
     recs = fe_report.get("recommendations", [])
-    if not recs and not details:
+    if not recs and not features:
         errors.append("Feature engineering report has no recommendations or details")
 
     return len(errors) == 0, errors
