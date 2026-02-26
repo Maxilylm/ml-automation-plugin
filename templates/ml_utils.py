@@ -1066,3 +1066,171 @@ def _save_lessons_store(store, output_dirs=None):
         path = os.path.join(d, LESSONS_FILENAME)
         with open(path, "w") as f:
             json.dump(store, f, indent=2, default=str)
+
+
+# =============================================================================
+# 11. STAGE VALIDATION (Iterative Self-Check)
+# =============================================================================
+
+STAGE_VALIDATORS = {
+    "eda": "_validate_eda_output",
+    "feature-engineering": "_validate_feature_engineering_output",
+    "preprocessing": "_validate_preprocessing_output",
+    "training": "_validate_training_output",
+    "evaluation": "_validate_evaluation_output",
+    "dashboard": "_validate_dashboard_output",
+}
+
+
+def validate_stage_output(stage, context=None):
+    """
+    Run stage-specific validation checks.
+
+    Args:
+        stage: Stage name (eda, feature-engineering, preprocessing, training, evaluation, dashboard)
+        context: Optional dict with stage-specific context (e.g., file paths, data)
+
+    Returns:
+        tuple: (passed: bool, errors: list[str])
+    """
+    if context is None:
+        context = {}
+
+    validator_name = STAGE_VALIDATORS.get(stage)
+    if validator_name is None:
+        return True, []
+
+    validator = globals().get(validator_name)
+    if validator is None:
+        return True, []
+
+    return validator(context)
+
+
+def _validate_eda_output(context):
+    """Validate EDA stage output."""
+    errors = []
+    report = load_eda_report()
+
+    if report is None:
+        errors.append("EDA report not found in any report directory")
+        return False, errors
+
+    required_keys = ["shape", "column_types"]
+    for key in required_keys:
+        if key not in report:
+            errors.append(f"EDA report missing required key: '{key}'")
+
+    shape = report.get("shape", {})
+    if not shape.get("rows") or not shape.get("cols"):
+        errors.append("EDA report has empty or zero shape (rows/cols)")
+
+    if not report.get("numerical_stats") and not report.get("categorical_stats"):
+        errors.append("EDA report has no numerical or categorical statistics")
+
+    return len(errors) == 0, errors
+
+
+def _validate_feature_engineering_output(context):
+    """Validate feature engineering output."""
+    errors = []
+    reports = load_agent_reports()
+    fe_report = reports.get("feature-engineering-analyst")
+
+    if fe_report is None:
+        errors.append("Feature engineering report not found")
+        return False, errors
+
+    findings = fe_report.get("findings", {})
+    details = findings.get("details", findings)
+
+    if isinstance(details, dict):
+        features = details.get("features", details.get("recommended_features", []))
+        if not features:
+            errors.append("No features recommended in feature engineering report")
+
+    recs = fe_report.get("recommendations", [])
+    if not recs and not details:
+        errors.append("Feature engineering report has no recommendations or details")
+
+    return len(errors) == 0, errors
+
+
+def _validate_preprocessing_output(context):
+    """Validate preprocessing stage output."""
+    errors = []
+
+    processing_paths = ["src/processing.py", "processing.py"]
+    found = any(os.path.exists(p) for p in processing_paths)
+    if not found:
+        errors.append("Processing pipeline file not found (expected src/processing.py)")
+
+    test_paths = ["tests/unit/test_processing.py", "tests/test_processing.py"]
+    found_test = any(os.path.exists(p) for p in test_paths)
+    if not found_test:
+        errors.append("No test file found for processing pipeline")
+
+    return len(errors) == 0, errors
+
+
+def _validate_training_output(context):
+    """Validate training stage output."""
+    errors = []
+
+    model_paths = ["models/", "src/models/"]
+    import glob as globmod
+    model_files = []
+    for mp in model_paths:
+        model_files.extend(globmod.glob(os.path.join(mp, "*.joblib")))
+        model_files.extend(globmod.glob(os.path.join(mp, "*.pkl")))
+        model_files.extend(globmod.glob(os.path.join(mp, "*.pickle")))
+    if not model_files:
+        errors.append("No model artifact found (expected .joblib or .pkl in models/)")
+
+    experiments = load_experiments()
+    if not experiments:
+        errors.append("No experiment logged in MLOps registry")
+
+    return len(errors) == 0, errors
+
+
+def _validate_evaluation_output(context):
+    """Validate evaluation stage output."""
+    errors = []
+
+    reports = load_agent_reports()
+    has_eval = any("eval" in name.lower() or "theory" in name.lower() for name in reports)
+    if not has_eval:
+        import glob as globmod
+        eval_files = globmod.glob("reports/*eval*") + globmod.glob("reports/*performance*")
+        if not eval_files:
+            errors.append("No evaluation report or metrics file found")
+
+    return len(errors) == 0, errors
+
+
+def _validate_dashboard_output(context):
+    """Validate dashboard output (supplements the post-dashboard hook)."""
+    import ast
+    import re
+
+    errors = []
+    dashboard_path = context.get("dashboard_path", "dashboard/app.py")
+
+    if not os.path.exists(dashboard_path):
+        errors.append(f"Dashboard file not found: {dashboard_path}")
+        return False, errors
+
+    with open(dashboard_path) as f:
+        source = f.read()
+
+    try:
+        ast.parse(source)
+    except SyntaxError as e:
+        errors.append(f"Dashboard syntax error: {e}")
+
+    placeholders = re.findall(r'"\{[A-Za-z_][A-Za-z0-9_]*\}"', source)
+    if placeholders:
+        errors.append(f"Unresolved placeholders: {placeholders}")
+
+    return len(errors) == 0, errors
