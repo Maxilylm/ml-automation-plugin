@@ -1,0 +1,132 @@
+{
+  "skill_name": "eda",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sales-data-exploration",
+      "prompt": "I just got this sales dataset from the finance team. It's at eda-workspace/test-datasets/sales_data.csv — can you take a look and tell me what's going on with our sales? We've got about 500 rows of daily transactions. I need to understand the patterns before our quarterly meeting next week.",
+      "expected_output": "Comprehensive EDA with: data overview, distribution analysis of revenue/units, correlation matrix, regional comparisons, time-series trends, and actionable summary. Should produce visualizations and a structured report.",
+      "files": ["eda-workspace/test-datasets/sales_data.csv"],
+      "assertions": [
+        {
+          "id": "sales-data-overview",
+          "text": "Includes data shape, column types, and basic statistics",
+          "type": "content_check"
+        },
+        {
+          "id": "sales-correlation",
+          "text": "Identifies correlation between units_sold, unit_price, discount_pct, and revenue",
+          "type": "content_check"
+        },
+        {
+          "id": "sales-visualization",
+          "text": "Produces at least 3 different visualization types (histogram, heatmap, bar chart, etc.)",
+          "type": "content_check"
+        },
+        {
+          "id": "sales-regional-breakdown",
+          "text": "Analyzes regional differences in sales patterns",
+          "type": "content_check"
+        },
+        {
+          "id": "sales-actionable-summary",
+          "text": "Provides actionable insights or recommendations, not just raw stats",
+          "type": "content_check"
+        },
+        {
+          "id": "sales-structured-report",
+          "text": "Saves structured EDA report to .claude/eda_report.json",
+          "type": "file_check"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "messy-data-quality",
+      "prompt": "Hey, there's something off with our customer database export at eda-workspace/test-datasets/messy_customer_data.csv. I've been hearing complaints about data quality. Can you investigate what's wrong? I need to know what we need to fix before we can use this for any analytics.",
+      "expected_output": "Should catch: impossible ages, duplicate rows, inconsistent city/status labels, future dates, constant column, near-perfect correlation (leakage signal), suspiciously round incomes, missing values, and extreme outlier in score.",
+      "files": ["eda-workspace/test-datasets/messy_customer_data.csv"],
+      "assertions": [
+        {
+          "id": "messy-impossible-ages",
+          "text": "Identifies impossible/invalid ages (negative, >130)",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-duplicates",
+          "text": "Detects duplicate rows in the dataset",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-inconsistent-labels",
+          "text": "Catches inconsistent categorical labels in city or status columns (case variations)",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-future-dates",
+          "text": "Flags future dates (2030) in signup_date",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-constant-column",
+          "text": "Identifies 'country' as a constant/zero-variance column",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-near-perfect-corr",
+          "text": "Detects near-perfect correlation between score and score_copy (potential leakage)",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-missing-values",
+          "text": "Reports missing values in income column",
+          "type": "content_check"
+        },
+        {
+          "id": "messy-outlier-detection",
+          "text": "Flags the extreme outlier (99999) in score column",
+          "type": "content_check"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "classification-target-analysis",
+      "prompt": "We're building a churn prediction model and I have our historical data at eda-workspace/test-datasets/churn_data.csv. 600 customers with features like tenure, charges, support tickets, etc. The target is 'churned'. Can you do a thorough analysis? I want to know which features matter most and if there are any data issues before we start modeling.",
+      "expected_output": "Should include: class imbalance analysis of churned column, feature-target relationships, correlation analysis flagging total_charges/tenure relationship, missing value report, feature importance indicators, and modeling recommendations.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {
+          "id": "churn-class-distribution",
+          "text": "Analyzes class distribution/imbalance of the churned target variable",
+          "type": "content_check"
+        },
+        {
+          "id": "churn-feature-target",
+          "text": "Examines relationships between features and the churn target",
+          "type": "content_check"
+        },
+        {
+          "id": "churn-total-charges-relationship",
+          "text": "Identifies that total_charges = tenure * monthly_charges (derived/redundant feature)",
+          "type": "content_check"
+        },
+        {
+          "id": "churn-missing-values",
+          "text": "Reports missing values in total_charges and payment_method",
+          "type": "content_check"
+        },
+        {
+          "id": "churn-modeling-recommendations",
+          "text": "Provides pre-modeling recommendations (handle imbalance, address missing data, feature engineering ideas)",
+          "type": "content_check"
+        },
+        {
+          "id": "churn-visualization",
+          "text": "Creates at least 2 visualizations showing feature-target relationships",
+          "type": "content_check"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "skill_name": "team-coldstart",
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-pipeline-execution",
+      "prompt": "Start a cold start workflow on the churn data at eda-workspace/test-datasets/churn_data.csv. Target column is 'churned'. I want to go from raw data to a deployed dashboard.",
+      "expected_output": "Should execute the full 8-stage pipeline with reflection gates and report bus.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {"id": "coldstart-init", "text": "Creates project structure with necessary directories", "type": "content_check"},
+        {"id": "coldstart-eda", "text": "Performs exploratory data analysis as first analytical step", "type": "content_check"},
+        {"id": "coldstart-parallel-agents", "text": "Spawns analysis agents in parallel (EDA, ML theory, feature engineering)", "type": "content_check"},
+        {"id": "coldstart-preprocessing", "text": "Creates preprocessing pipeline with split-before-transform", "type": "content_check"},
+        {"id": "coldstart-training", "text": "Trains and selects a model with cross-validation", "type": "content_check"},
+        {"id": "coldstart-evaluation", "text": "Evaluates model with appropriate metrics", "type": "content_check"},
+        {"id": "coldstart-dashboard", "text": "Builds an interactive dashboard (Streamlit or similar)", "type": "content_check"},
+        {"id": "coldstart-deployment", "text": "Deploys the application to a target environment", "type": "content_check"}
+      ]
+    }
+  ]
+}

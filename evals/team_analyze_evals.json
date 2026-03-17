@@ -1,0 +1,19 @@
+{
+  "skill_name": "team-analyze",
+  "evals": [
+    {
+      "id": 1,
+      "name": "quick-dataset-analysis",
+      "prompt": "Run a quick analysis on the churn data at eda-workspace/test-datasets/churn_data.csv. I want to understand the data and get recommendations before we start modeling.",
+      "expected_output": "Should coordinate EDA agent, ML theory review, and feature engineering analysis with unified findings.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {"id": "analyze-eda-phase", "text": "Performs exploratory data analysis as first step", "type": "content_check"},
+        {"id": "analyze-quality-review", "text": "Reviews data quality and identifies issues", "type": "content_check"},
+        {"id": "analyze-feature-recommendations", "text": "Provides feature engineering recommendations", "type": "content_check"},
+        {"id": "analyze-modeling-guidance", "text": "Includes modeling recommendations (model selection, handling imbalance)", "type": "content_check"},
+        {"id": "analyze-report-bus", "text": "Writes findings to the report bus for downstream consumption", "type": "file_check"}
+      ]
+    }
+  ]
+}

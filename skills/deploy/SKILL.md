@@ -12,16 +12,44 @@ description: Deploy applications, dashboards, and models to various targets incl
 
 ## Supported Targets
 
-- **Local**: Docker containers with docker-compose
-- **Snowflake**: Model Registry + Streamlit in Snowflake
-- **Streamlit Cloud**: Community Cloud deployment
-- **AWS**: ECS, Lambda, SageMaker
-- **GCP**: Cloud Run, Vertex AI
+| Target | Command | What It Does |
+|--------|---------|-------------|
+| Local Docker | `/deploy local` | Builds Docker image, starts docker-compose, verifies health |
+| Snowflake | `/deploy snowflake` | Model Registry + Streamlit in Snowflake |
+| Streamlit Cloud | `/deploy streamlit-cloud` | Community Cloud deployment |
+| AWS | `/deploy aws` | ECS, Lambda, or SageMaker |
+| GCP | `/deploy gcp` | Cloud Run or Vertex AI |
 
 ## Workflow
 
-1. Validate deployment requirements
-2. Package model/application
-3. Configure target environment
-4. Deploy and verify health endpoints
-5. Set up monitoring
+1. **Validate requirements** — Check model artifact exists, dependencies resolved
+2. **Package application** — Build Docker image or package for target
+3. **Configure environment** — Set env vars, secrets, connection strings
+4. **Deploy and verify** — Deploy to target, check health endpoints
+5. **Set up monitoring** — Logging, alerting, performance dashboards
+
+## Agent Coordination
+
+- **mlops-engineer** — Handles deployment infrastructure and registry
+- **brutal-code-reviewer** — Reviews deployment code quality
+- **frontend-ux-analyst** — Reviews dashboard UX (if deploying Streamlit)
+
+## Report Bus Integration (v1.2.0)
+
+Reads prior reports to populate deployment metadata. Writes deployment report:
+```python
+from ml_utils import save_agent_report
+save_agent_report("deployer", {
+    "status": "completed",
+    "findings": {"target": "local", "url": "http://localhost:8000", "health": "ok"},
+    "artifacts": ["Dockerfile", "docker-compose.yml", "app/main.py"]
+})
+```
+
+## MLOps Registry (v1.3.0)
+
+After deployment, registers the deployed model version in `model-registry.json` with deployment metadata (target, URL, timestamp). Use `/registry models` to inspect.
+
+## Full Specification
+
+See `commands/deploy.md` for complete deployment workflows, Dockerfile templates, and target-specific instructions.

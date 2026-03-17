@@ -17,8 +17,18 @@ Before writing boilerplate, copy the shared utilities into the project:
 
 ```python
 import shutil, os
-utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
-if not os.path.exists("src/ml_utils.py"):
+# Try multiple plugin installation paths (Claude Code, Cursor, Codex, OpenCode)
+from pathlib import Path
+_PLUGIN_PATHS = [
+    Path.home() / ".claude" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".cursor" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".codex" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".config" / "opencode" / "ml-automation" / "templates" / "ml_utils.py",
+]
+utils_src = next((str(p) for p in _PLUGIN_PATHS if p.exists()), None)
+if utils_src is None:
+    print("Warning: ml_utils.py not found in any known plugin path")
+if utils_src and not os.path.exists("src/ml_utils.py"):
     os.makedirs("src", exist_ok=True)
     shutil.copy2(utils_src, "src/ml_utils.py")
 

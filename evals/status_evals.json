@@ -1,0 +1,17 @@
+{
+  "skill_name": "status",
+  "evals": [
+    {
+      "id": 1,
+      "name": "workflow-status-display",
+      "prompt": "Show me the current workflow status. What agents have completed their work and what's still pending?",
+      "expected_output": "Should scan report bus directories, find agent reports, display unified table of agent statuses, cross-agent insights, and pending work.",
+      "files": [],
+      "assertions": [
+        {"id": "status-scans-reports", "text": "Scans report directories for *_report.json files", "type": "content_check"},
+        {"id": "status-agent-table", "text": "Displays agents with their completion status in a structured format", "type": "content_check"},
+        {"id": "status-pending-work", "text": "Identifies what work is still pending or blocked", "type": "content_check"}
+      ]
+    }
+  ]
+}

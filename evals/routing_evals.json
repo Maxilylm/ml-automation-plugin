@@ -1,0 +1,21 @@
+{
+  "skill_name": "routing",
+  "description": "Tests the assigner agent's routing accuracy on ambiguous prompts",
+  "evals": [
+    {"id": 1, "name": "accuracy-drop-to-eda", "prompt": "Our model accuracy dropped from 95% to 60% after last week's data update", "expected_agent": "eda-analyst", "rationale": "Data-oriented context about accuracy drop suggests data investigation"},
+    {"id": 2, "name": "create-dashboard-to-developer", "prompt": "Create a dashboard showing model performance over time", "expected_agent": "developer", "rationale": "'Create' is an implementation keyword"},
+    {"id": 3, "name": "optimize-pipeline-to-developer", "prompt": "The preprocessing pipeline is too slow, optimize it", "expected_agent": "developer", "rationale": "'Optimize' is implementation work requiring code changes"},
+    {"id": 4, "name": "leakage-check-to-ml-theory", "prompt": "Check if there's data leakage in our feature pipeline", "expected_agent": "ml-theory-advisor", "rationale": "'Data leakage' is an ML methodology concern"},
+    {"id": 5, "name": "deploy-model-to-mlops", "prompt": "Deploy the model and set up monitoring", "expected_agent": "mlops-engineer", "rationale": "'Deploy' and 'monitoring' are MLOps keywords"},
+    {"id": 6, "name": "review-quality-to-code-reviewer", "prompt": "Review the code quality of the new training module", "expected_agent": "brutal-code-reviewer", "rationale": "'Review code quality' maps to code reviewer"},
+    {"id": 7, "name": "add-features-to-feature-eng", "prompt": "We need to add new features based on customer behavior data", "expected_agent": "feature-engineering-analyst", "rationale": "'Features' + 'data' context = ML features, not software features"},
+    {"id": 8, "name": "broken-api-to-developer", "prompt": "Something's wrong with the API endpoint returning predictions", "expected_agent": "developer", "rationale": "'Something's wrong' is a bug report requiring code fixes"},
+    {"id": 9, "name": "churn-analysis-to-eda", "prompt": "Analyze why certain customer segments have higher churn", "expected_agent": "eda-analyst", "rationale": "'Analyze' + data context maps to EDA"},
+    {"id": 10, "name": "retraining-to-mlops", "prompt": "Set up automated retraining when model drift is detected", "expected_agent": "mlops-engineer", "rationale": "'Retraining', 'drift', 'monitoring' are MLOps concerns"},
+    {"id": 11, "name": "refactor-to-developer", "prompt": "Refactor the data loading code to use async IO", "expected_agent": "developer", "rationale": "'Refactor' is implementation work"},
+    {"id": 12, "name": "overfitting-to-ml-theory", "prompt": "Our model shows 99% train accuracy but 60% test accuracy", "expected_agent": "ml-theory-advisor", "rationale": "Overfitting diagnosis is ML theory"},
+    {"id": 13, "name": "ui-feedback-to-frontend", "prompt": "The dashboard layout is confusing and hard to navigate", "expected_agent": "frontend-ux-analyst", "rationale": "UI/UX feedback maps to frontend analyst"},
+    {"id": 14, "name": "complex-multi-step-to-orchestrator", "prompt": "We need to retrain the model, update the API, and redeploy — coordinate the whole thing", "expected_agent": "orchestrator", "rationale": "Multi-step coordination task"},
+    {"id": 15, "name": "pr-review-to-pr-approver", "prompt": "Review and merge PR #42 if it looks good", "expected_agent": "pr-approver", "rationale": "'Review PR' + 'merge' maps to PR approver"}
+  ]
+}

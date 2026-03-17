@@ -65,8 +65,13 @@ curl -X POST http://localhost:3456/api/tickets/<ticket-id>/assign \
 
 **Implementation tasks → ALWAYS `developer`:**
 - "add", "implement", "create", "build", "fix", "change", "update", "modify"
+- "optimize", "refactor", "debug", "improve", "speed up", "configure", "set up", "migrate"
 - "add button", "add dark mode", "add feature", "change file selector"
 - Any ticket that requires CODE CHANGES goes to `developer`
+
+**Diagnostic language → Implies `developer` (bug fix):**
+- "wrong", "broken", "not working", "error", "failing", "issue with", "crash", "bug"
+- These indicate something is broken and needs a code fix
 
 **Review/Analysis tasks → Analysts:**
 - "review PR", "merge", "approve" → pr-approver
@@ -76,6 +81,18 @@ curl -X POST http://localhost:3456/api/tickets/<ticket-id>/assign \
 - "explain model", "ML architecture" → ml-theory-advisor
 - "deploy", "production", "pipeline" → mlops-engineer
 
+**ML methodology → `ml-theory-advisor`:**
+- "leakage", "overfitting", "underfitting", "regularization", "bias", "variance"
+- "validation strategy", "cross-validation design", "model selection theory"
+
+**MLOps infrastructure → `mlops-engineer`:**
+- "retraining", "drift", "monitoring", "serving", "canary", "rollback", "A/B test"
+- "containerize", "dockerize", "CI/CD", "model registry"
+
+**ML feature design → `feature-engineering-analyst`:**
+- "features" + data context ("data", "dataset", "behavior", "customer", "signals")
+- "feature importance", "feature selection", "interaction terms", "lag features"
+
 ## When Uncertain
 
 If a ticket doesn't clearly match an agent:
@@ -83,6 +100,20 @@ If a ticket doesn't clearly match an agent:
 2. Or leave unassigned and report the ambiguity
 
 Always explain your reasoning when assigning.
+
+## Contextual Disambiguation
+
+Some keywords are ambiguous. Use surrounding context to route correctly:
+
+| Keyword | + Context | Route To |
+|---------|-----------|----------|
+| "pipeline" | + "slow", "optimize", "refactor" | `developer` |
+| "pipeline" | + "deploy", "production", "serve" | `mlops-engineer` |
+| "pipeline" | + "leakage", "features", "data quality" | `ml-theory-advisor` |
+| "features" | + "add", "build", "implement" (software) | `developer` |
+| "features" | + "data", "dataset", "behavior" (ML) | `feature-engineering-analyst` |
+| "model" | + "deploy", "serve", "monitor" | `mlops-engineer` |
+| "model" | + "accuracy", "overfitting", "leakage" | `ml-theory-advisor` |
 
 ## Agent Report Bus (v1.2.0)
 

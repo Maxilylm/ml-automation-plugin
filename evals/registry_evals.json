@@ -1,0 +1,17 @@
+{
+  "skill_name": "registry",
+  "evals": [
+    {
+      "id": 1,
+      "name": "registry-inspection",
+      "prompt": "Show me what's in the MLOps registry. What models, features, and experiments have been tracked?",
+      "expected_output": "Should scan registry directories, display model versions, feature store entries, experiments, and data versions.",
+      "files": [],
+      "assertions": [
+        {"id": "registry-scans-dirs", "text": "Scans registry directories (.claude/mlops/, .cursor/mlops/, mlops/)", "type": "content_check"},
+        {"id": "registry-model-table", "text": "Displays registered models with version and metrics", "type": "content_check"},
+        {"id": "registry-handles-empty", "text": "Handles case where no registries exist gracefully", "type": "content_check"}
+      ]
+    }
+  ]
+}

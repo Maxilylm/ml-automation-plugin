@@ -298,9 +298,8 @@ DROP MODEL VERSION TITANIC_SURVIVAL_MODEL VERSION v_current;
 
 This skill coordinates with:
 - **mlops-engineer** - For Docker/cloud deployments
-- **snowflake-engineer** - For Snowflake deployments
 - **frontend-ux-analyst** - For dashboard review
-- **qa-test-agent** - For deployment testing
+- **brutal-code-reviewer** - For deployment code review
 
 After deployment, verify:
 1. Health check passes

@@ -3,3 +3,8 @@
 __pycache__/
 .env
 .claude/
+
+# Eval workspace — scratch data, iteration outputs, audit reports
+eda-workspace/
+evals/iterations/
+docs/superpowers/

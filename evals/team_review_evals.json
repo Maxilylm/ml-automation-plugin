@@ -1,0 +1,18 @@
+{
+  "skill_name": "team-review",
+  "evals": [
+    {
+      "id": 1,
+      "name": "multi-agent-code-review",
+      "prompt": "Run a team review on the current changes. I've been working on the preprocessing and training modules.",
+      "expected_output": "Should identify changed files, spawn parallel reviewers, collect feedback, and present unified findings with severity levels.",
+      "files": [],
+      "assertions": [
+        {"id": "review-identifies-changes", "text": "Identifies what files have changed (git diff or specified files)", "type": "content_check"},
+        {"id": "review-multiple-reviewers", "text": "Spawns at least 2 different reviewer agents", "type": "content_check"},
+        {"id": "review-severity-levels", "text": "Classifies findings by severity (critical, warning, info)", "type": "content_check"},
+        {"id": "review-unified-summary", "text": "Presents a unified summary of all reviewer findings", "type": "content_check"}
+      ]
+    }
+  ]
+}

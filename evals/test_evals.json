@@ -1,0 +1,18 @@
+{
+  "skill_name": "test",
+  "evals": [
+    {
+      "id": 1,
+      "name": "preprocessing-test-generation",
+      "prompt": "Generate tests for a preprocessing module at src/preprocessing.py that handles missing values, encodes categoricals, and scales numerics. Make sure we hit 80% coverage.",
+      "expected_output": "Should generate unit tests for each transformer, integration test for full pipeline, edge case tests, and run with coverage.",
+      "files": [],
+      "assertions": [
+        {"id": "test-unit-tests", "text": "Generates unit tests for individual preprocessing functions", "type": "content_check"},
+        {"id": "test-edge-cases", "text": "Tests edge cases like missing values, empty inputs, or unexpected types", "type": "content_check"},
+        {"id": "test-pytest-command", "text": "Runs tests with pytest and shows results", "type": "content_check"},
+        {"id": "test-coverage-check", "text": "Reports test coverage percentage and validates against 80% threshold", "type": "content_check"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "skill_name": "preprocess",
+  "evals": [
+    {
+      "id": 1,
+      "name": "basic-preprocessing-pipeline",
+      "prompt": "I have the churn dataset at eda-workspace/test-datasets/churn_data.csv. Build a preprocessing pipeline for predicting the 'churned' column. Handle the missing values and encode the categoricals properly.",
+      "expected_output": "Should create train/test split BEFORE any transformations, use ColumnTransformer with appropriate transformers per column type, fit on train only, save pipeline artifact.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {"id": "preprocess-split-first", "text": "Splits data into train/test BEFORE any preprocessing transforms", "type": "content_check"},
+        {"id": "preprocess-column-transformer", "text": "Uses sklearn ColumnTransformer or Pipeline to organize transformations", "type": "content_check"},
+        {"id": "preprocess-fit-train-only", "text": "Fits transformers on training data only (not test or full dataset)", "type": "content_check"},
+        {"id": "preprocess-handles-missing", "text": "Handles missing values in total_charges and payment_method columns", "type": "content_check"},
+        {"id": "preprocess-saves-pipeline", "text": "Saves the preprocessing pipeline as a serialized artifact (joblib/pickle)", "type": "content_check"},
+        {"id": "preprocess-report", "text": "Writes a preprocessing report to the report bus", "type": "file_check"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "leakage-prevention",
+      "prompt": "Preprocess the sales data at eda-workspace/test-datasets/sales_data.csv for a regression task predicting 'revenue'. Be very careful about data leakage.",
+      "expected_output": "Should identify that revenue = units_sold * unit_price * (1 - discount_pct) and flag this as a leakage risk. Should not include leaky features in the pipeline.",
+      "files": ["eda-workspace/test-datasets/sales_data.csv"],
+      "assertions": [
+        {"id": "leakage-identifies-formula", "text": "Identifies that revenue is a derived column or has near-perfect correlation with other features", "type": "content_check"},
+        {"id": "leakage-drops-or-flags", "text": "Drops or flags leaky features rather than including them in the pipeline", "type": "content_check"},
+        {"id": "leakage-split-before-transform", "text": "Still follows split-before-transform principle", "type": "content_check"}
+      ]
+    }
+  ]
+}

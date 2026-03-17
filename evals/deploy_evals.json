@@ -1,0 +1,18 @@
+{
+  "skill_name": "deploy",
+  "evals": [
+    {
+      "id": 1,
+      "name": "local-docker-deployment",
+      "prompt": "Deploy the trained model as a local Docker API. The model is at models/model_v1.joblib and we need a FastAPI endpoint for predictions.",
+      "expected_output": "Should create Dockerfile, docker-compose.yml, FastAPI app with /predict endpoint, health check, and verify the deployment.",
+      "files": [],
+      "assertions": [
+        {"id": "deploy-dockerfile", "text": "Creates a Dockerfile with appropriate base image and dependencies", "type": "content_check"},
+        {"id": "deploy-api-endpoint", "text": "Creates a /predict endpoint that accepts input and returns predictions", "type": "content_check"},
+        {"id": "deploy-health-check", "text": "Includes a health check endpoint (/health or /)", "type": "content_check"},
+        {"id": "deploy-model-loading", "text": "Loads the serialized model at startup", "type": "content_check"}
+      ]
+    }
+  ]
+}

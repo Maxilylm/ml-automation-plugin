@@ -12,12 +12,10 @@ You are coordinating a comprehensive code review with multiple specialized agent
 ## Overview
 
 The `/team review` command coordinates reviews from:
-- **pr-reviewer** - Overall code quality and approval authority
-- **qa-test-agent** - Test coverage and quality
-- **brutal-code-reviewer** - Maintainability and AI-friendliness
+- **pr-approver** - Overall code quality and approval authority
+- **brutal-code-reviewer** - Code quality, maintainability, and test coverage
 - **ml-theory-advisor** - ML methodology (if applicable)
-- **mlops-engineer** - Deployment readiness (if applicable)
-- **snowflake-engineer** - Snowflake code (if applicable)
+- **mlops-engineer** - Deployment readiness and Snowflake code (if applicable)
 
 ## Usage
 
@@ -65,7 +63,7 @@ gh pr diff {pr_number} --name-only
 
 **Always invoke:**
 
-1. **pr-reviewer** - Mandatory for all reviews
+1. **pr-approver** - Mandatory for all reviews
    ```
    Review the following code changes for overall quality, security,
    and adherence to best practices. Files: {file_list}
@@ -77,7 +75,7 @@ gh pr diff {pr_number} --name-only
    - Approval recommendation
    ```
 
-2. **qa-test-agent** - For any code changes
+2. **brutal-code-reviewer** - For any code changes
    ```
    Review test coverage and quality for: {file_list}
 
@@ -127,7 +125,7 @@ gh pr diff {pr_number} --name-only
    - Logging and monitoring
    ```
 
-6. **snowflake-engineer** - If Snowflake code detected
+6. **mlops-engineer** - If Snowflake code detected
    ```
    Review the following Snowflake code: {file_list}
 
@@ -153,8 +151,8 @@ Gather results from all reviewers:
 ### Reviewers
 | Reviewer | Status | Blocking Issues |
 |----------|--------|-----------------|
-| pr-reviewer | ✅ Approved | 0 |
-| qa-test-agent | ⚠️ Changes Requested | 1 |
+| pr-approver | ✅ Approved | 0 |
+| brutal-code-reviewer | ⚠️ Changes Requested | 1 |
 | brutal-code-reviewer | ✅ Approved | 0 |
 | ml-theory-advisor | ✅ Approved | 0 |
 
@@ -168,7 +166,7 @@ Gather results from all reviewers:
 ### 🚫 Blocking Issues
 
 #### Issue 1: Insufficient Test Coverage
-- **Reviewer**: qa-test-agent
+- **Reviewer**: brutal-code-reviewer
 - **File**: src/model.py
 - **Lines**: 45-60
 - **Issue**: New function `train_model` has no tests
@@ -230,8 +228,7 @@ git checkout main
 git merge --squash feature-branch
 git commit -m "feat: Add preprocessing pipeline
 
-Reviewed-by: pr-reviewer
-Reviewed-by: qa-test-agent
+Reviewed-by: pr-approver
 Reviewed-by: brutal-code-reviewer"
 ```
 ```
@@ -271,8 +268,8 @@ Security concern detected. Human review required.
 ## Review Team
 | Agent | Focus | Verdict |
 |-------|-------|---------|
-| pr-reviewer | Overall | ✅/❌/⚠️ |
-| qa-test-agent | Testing | ✅/❌/⚠️ |
+| pr-approver | Overall | ✅/❌/⚠️ |
+| brutal-code-reviewer | Testing | ✅/❌/⚠️ |
 | brutal-code-reviewer | Quality | ✅/❌/⚠️ |
 | ml-theory-advisor | ML | ✅/❌/⚠️ |
 
@@ -309,9 +306,7 @@ Refer to `.claude/permissions.json` for agent approval authorities:
 
 | Agent | Can Approve | Can Block | Can Merge |
 |-------|-------------|-----------|-----------|
-| pr-reviewer | Yes | Yes | Yes |
-| qa-test-agent | Yes (tests) | Yes | No |
+| pr-approver | Yes | Yes | Yes |
 | brutal-code-reviewer | Yes | Yes | No |
 | ml-theory-advisor | Yes (ML) | Yes | No |
 | mlops-engineer | Yes (deploy) | Yes | No |
-| snowflake-engineer | Yes (Snowflake) | Yes | No |

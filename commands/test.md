@@ -309,7 +309,7 @@ Tests are automatically run in CI via GitHub Actions:
 
 ## After Test Generation
 
-After generating tests, the `qa-test-agent` will be invoked to:
+After generating tests, the `brutal-code-reviewer` will be invoked to:
 1. Review test quality
 2. Suggest improvements
 3. Verify coverage meets threshold

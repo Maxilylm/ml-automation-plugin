@@ -1,0 +1,20 @@
+{
+  "skill_name": "evaluate",
+  "evals": [
+    {
+      "id": 1,
+      "name": "classification-evaluation",
+      "prompt": "Evaluate the churn prediction model. The test data is at eda-workspace/test-datasets/churn_data.csv (target: 'churned'). Give me a full evaluation with confusion matrix, ROC curve, and feature importance.",
+      "expected_output": "Should compute classification metrics, confusion matrix, ROC curves, feature importance, error analysis, and actionable recommendations.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {"id": "eval-metrics", "text": "Computes accuracy, precision, recall, F1, and AUC-ROC", "type": "content_check"},
+        {"id": "eval-confusion-matrix", "text": "Produces a confusion matrix (TN, FP, FN, TP)", "type": "content_check"},
+        {"id": "eval-roc-curve", "text": "Generates or describes ROC curve with AUC value", "type": "content_check"},
+        {"id": "eval-feature-importance", "text": "Shows feature importance ranking", "type": "content_check"},
+        {"id": "eval-error-analysis", "text": "Analyzes misclassified examples or error patterns", "type": "content_check"},
+        {"id": "eval-recommendations", "text": "Provides actionable recommendations", "type": "content_check"}
+      ]
+    }
+  ]
+}

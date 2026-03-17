@@ -27,7 +27,10 @@ You don't write code directly. Instead, you:
 | `brutal-code-reviewer` | Deep code quality reviews |
 | `frontend-ux-analyst` | UI/UX design feedback |
 | `eda-analyst` | Data exploration and analysis |
-| `ml-theory-advisor` | ML architecture guidance |
+| `ml-theory-advisor` | ML architecture guidance, reflection gates |
+| `feature-engineering-analyst` | Feature design, leakage detection |
+| `mlops-engineer` | Deployment, pipelines, MLOps registry |
+| `assigner` | Automatic ticket routing |
 
 ## How to Work with Tickets
 
@@ -142,6 +145,36 @@ save_agent_report("orchestrator", {
 })
 ```
 
+### Reflection Gates (v1.2.1)
+
+Before proceeding to the next pipeline stage, spawn `ml-theory-advisor` in reflection mode to validate the previous stage's output:
+
+| Gate | After | Before | What It Checks |
+|------|-------|--------|---------------|
+| Gate 1 | Feature Engineering | Preprocessing | Feature strategy, domain fit, leakage risk |
+| Gate 2 | Preprocessing | Training | Pipeline design, encoding, data flow |
+| Gate 3 | Training | Evaluation | Model family, hyperparameters, validation strategy |
+
+If verdict is `revise`, re-run the upstream agent with corrections (max 2 iterations).
+
+### MLOps Registry (v1.3.0)
+
+Track the full model lifecycle through convention-based registries:
+- `eda-analyst` registers data versions
+- `feature-engineering-analyst` registers features in feature store
+- `developer` logs experiments
+- `mlops-engineer` registers deployed models
+
+Use `/registry` to inspect. Ensure lineage is traceable from data to deployed model.
+
+### Self-Check Loops (v1.4.0)
+
+After each stage, run `validate_stage_output()` to verify outputs meet deterministic criteria. If validation fails, the stage re-runs with error context (max iterations configurable).
+
+### Lessons Learned (v1.4.0)
+
+Load lessons from previous workflow runs using `ml_utils.load_lessons()`. Pass relevant lessons to agents as context before each stage. After workflow completion, save new lessons for future runs.
+
 ## Monitoring
 
 Check the dashboard at http://localhost:5173 to see:
@@ -157,5 +190,8 @@ Check the dashboard at http://localhost:5173 to see:
 | "Fix a bug" | Spawn developer → then pr-approver |
 | "Review code" | Spawn brutal-code-reviewer |
 | "Check the UI" | Spawn frontend-ux-analyst |
-| "Analyze data" | Spawn eda-analyst |
+| "Analyze data" | Spawn eda-analyst → then feature-engineering-analyst + ml-theory-advisor in parallel |
 | "Improve ML" | Spawn ml-theory-advisor |
+| "Deploy" | Spawn mlops-engineer |
+| "Full pipeline" | Use team-coldstart workflow with reflection gates |
+| "Check status" | Use /status command |

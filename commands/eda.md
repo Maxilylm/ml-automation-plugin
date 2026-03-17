@@ -54,8 +54,18 @@ You are performing comprehensive exploratory data analysis on any provided datas
 ```python
 # Copy ml_utils.py from plugin templates if not present
 import shutil, os
-utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
-if os.path.exists(utils_src) and not os.path.exists("src/ml_utils.py"):
+# Try multiple plugin installation paths (Claude Code, Cursor, Codex, OpenCode)
+from pathlib import Path
+_PLUGIN_PATHS = [
+    Path.home() / ".claude" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".cursor" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".codex" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".config" / "opencode" / "ml-automation" / "templates" / "ml_utils.py",
+]
+utils_src = next((str(p) for p in _PLUGIN_PATHS if p.exists()), None)
+if utils_src is None:
+    print("Warning: ml_utils.py not found in any known plugin path")
+if utils_src and os.path.exists(utils_src) and not os.path.exists("src/ml_utils.py"):
     os.makedirs("src", exist_ok=True)
     shutil.copy2(utils_src, "src/ml_utils.py")
 
@@ -77,8 +87,18 @@ Before writing boilerplate code, check if `src/ml_utils.py` exists in the projec
 
 ```python
 import shutil, os
-utils_src = os.path.expanduser("~/.config/opencode/ml-automation/templates/ml_utils.py")
-if not os.path.exists("src/ml_utils.py"):
+# Try multiple plugin installation paths (Claude Code, Cursor, Codex, OpenCode)
+from pathlib import Path
+_PLUGIN_PATHS = [
+    Path.home() / ".claude" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".cursor" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".codex" / "plugins" / "ml-automation" / "templates" / "ml_utils.py",
+    Path.home() / ".config" / "opencode" / "ml-automation" / "templates" / "ml_utils.py",
+]
+utils_src = next((str(p) for p in _PLUGIN_PATHS if p.exists()), None)
+if utils_src is None:
+    print("Warning: ml_utils.py not found in any known plugin path")
+if utils_src and not os.path.exists("src/ml_utils.py"):
     os.makedirs("src", exist_ok=True)
     shutil.copy2(utils_src, "src/ml_utils.py")
 ```

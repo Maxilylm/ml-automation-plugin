@@ -2,7 +2,7 @@
 name: report
 description: "Generate ad-hoc reports and dashboards for any data project. Supports EDA reports, performance reports, drift monitoring, and project status summaries."
 user_invocable: true
-aliases: ["generate-report", "summary", "status"]
+aliases: ["generate-report", "summary"]
 ---
 
 # Report Skill - Generate Reports and Dashboards
@@ -275,8 +275,8 @@ Interactive HTML dashboard saved to reports/metrics.html
 This skill may invoke:
 - **eda-analyst** - For EDA report generation
 - **ml-theory-advisor** - For model analysis
-- **data-steward** - For drift analysis
-- **project-manager** - For project status
+- **eda-analyst** - For drift analysis
+- **mlops-engineer** - For project status
 
 ## Output Location
 

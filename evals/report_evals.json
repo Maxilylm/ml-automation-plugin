@@ -1,0 +1,19 @@
+{
+  "skill_name": "report",
+  "evals": [
+    {
+      "id": 1,
+      "name": "eda-report-generation",
+      "prompt": "Generate an EDA report for the sales data at eda-workspace/test-datasets/sales_data.csv. I need something I can share with stakeholders.",
+      "expected_output": "Should produce formatted markdown report with data overview, quality summary, key findings, visualizations, and recommendations.",
+      "files": ["eda-workspace/test-datasets/sales_data.csv"],
+      "assertions": [
+        {"id": "report-structured-format", "text": "Produces a structured markdown report with clear sections", "type": "content_check"},
+        {"id": "report-data-overview", "text": "Includes dataset overview (rows, columns, types)", "type": "content_check"},
+        {"id": "report-key-findings", "text": "Highlights key findings and patterns", "type": "content_check"},
+        {"id": "report-recommendations", "text": "Provides actionable recommendations", "type": "content_check"},
+        {"id": "report-saves-file", "text": "Saves report to reports/ directory", "type": "file_check"}
+      ]
+    }
+  ]
+}

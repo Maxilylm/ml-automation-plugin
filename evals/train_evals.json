@@ -1,0 +1,21 @@
+{
+  "skill_name": "train",
+  "evals": [
+    {
+      "id": 1,
+      "name": "classification-training",
+      "prompt": "Train a model to predict customer churn using the data at eda-workspace/test-datasets/churn_data.csv. The target column is 'churned'. Use proper cross-validation and compare at least 2 model families.",
+      "expected_output": "Should split data, build pipeline, train baseline, try multiple models with CV, select best, evaluate ONCE on test set, save model artifact.",
+      "files": ["eda-workspace/test-datasets/churn_data.csv"],
+      "assertions": [
+        {"id": "train-split-before", "text": "Splits data before any preprocessing or model fitting", "type": "content_check"},
+        {"id": "train-cv-on-train", "text": "Cross-validates on training set only (not full dataset)", "type": "content_check"},
+        {"id": "train-multiple-models", "text": "Compares at least 2 different model families", "type": "content_check"},
+        {"id": "train-test-once", "text": "Evaluates on test set only once at the end", "type": "content_check"},
+        {"id": "train-random-state", "text": "Sets random_state for reproducibility", "type": "content_check"},
+        {"id": "train-saves-model", "text": "Saves the trained model as a serialized artifact", "type": "content_check"},
+        {"id": "train-reports-metrics", "text": "Reports classification metrics (accuracy, F1, or AUC)", "type": "content_check"}
+      ]
+    }
+  ]
+}
