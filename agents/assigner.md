@@ -46,74 +46,74 @@ curl -X POST http://localhost:3456/api/tickets/<ticket-id>/assign \
 
 **IMPORTANT:** Do NOT pass `autoStart: false`. Tickets should auto-start the assigned agent so they begin working immediately.
 
-## Assignment Logic
+## Assignment Logic — Priority Order
 
-**CRITICAL: Implementation vs Analysis**
-- If the ticket asks to IMPLEMENT, ADD, CREATE, BUILD, FIX, or CHANGE something → `developer`
-- If the ticket asks to REVIEW, ANALYZE, EVALUATE, or give FEEDBACK → use the appropriate analyst
+Evaluate rules **in this exact order**. Stop at the first match.
 
-1. **ANY code implementation task** → `developer` (the ONLY agent that can edit files)
-2. **PR review requests** → `pr-approver`
-3. **Code quality review (not implementation)** → `brutal-code-reviewer`
-4. **UI/UX analysis (not implementation)** → `frontend-ux-analyst`
-5. **Data analysis** → `eda-analyst`
-6. **ML architecture questions (not implementation)** → `ml-theory-advisor`
-7. **Deployment tasks** → `mlops-engineer`
-8. **Complex multi-agent tasks** → `orchestrator`
+### Priority 1: Multi-agent coordination → `orchestrator`
+If the ticket describes 3+ distinct tasks spanning different agent domains, or uses coordination language:
+- "coordinate", "orchestrate", "end-to-end", "the whole thing", "manage the workflow"
+- Example: "retrain the model, update the API, and redeploy" → `orchestrator`
 
-## Keywords to Watch
+### Priority 2: Domain-specific compound rules
+Check for domain keywords that override generic verbs. These fire BEFORE implementation keywords.
 
-**Implementation tasks → ALWAYS `developer`:**
-- "add", "implement", "create", "build", "fix", "change", "update", "modify"
-- "optimize", "refactor", "debug", "improve", "speed up", "configure", "set up", "migrate"
-- "add button", "add dark mode", "add feature", "change file selector"
-- Any ticket that requires CODE CHANGES goes to `developer`
+**MLOps infrastructure → `mlops-engineer`:**
+If ANY of these appear, route to mlops-engineer even if "set up", "deploy", "create" also appear:
+- "retraining", "drift", "monitoring", "serving", "canary", "rollback", "A/B test"
+- "containerize", "dockerize", "CI/CD", "model registry"
+- "deploy" + "model" or "production" or "monitoring"
+- "set up" + "monitoring" or "retraining" or "pipeline" (infrastructure, not code)
 
-**Diagnostic language → Implies `developer` (bug fix):**
+**ML methodology → `ml-theory-advisor`:**
+If ANY of these appear, route to ml-theory-advisor:
+- "leakage", "overfitting", "underfitting", "regularization", "bias", "variance"
+- "validation strategy", "cross-validation design", "model selection theory"
+- "accuracy" + "dropped", "degraded", "data update", "train vs test"
+
+**ML feature design → `feature-engineering-analyst`:**
+If "features" appears with data context, route here even if "add" or "create" also appear:
+- "features" + ("data", "dataset", "behavior", "customer", "signals", "columns")
+- "feature importance", "feature selection", "interaction terms", "lag features"
+
+**Data investigation → `eda-analyst`:**
+- "accuracy" + "dropped", "degraded", "after data update", "data change"
+- "analyze data", "statistics", "explore", "data quality"
+
+### Priority 3: Review/analysis tasks → Analysts
+- "review PR", "merge", "approve" → `pr-approver`
+- "review code quality" → `brutal-code-reviewer`
+- "review UI/UX", "analyze design", "layout", "confusing", "hard to navigate" → `frontend-ux-analyst`
+- "explain model", "ML architecture" → `ml-theory-advisor`
+
+### Priority 4: Diagnostic language → `developer`
 - "wrong", "broken", "not working", "error", "failing", "issue with", "crash", "bug"
 - These indicate something is broken and needs a code fix
 
-**Review/Analysis tasks → Analysts:**
-- "review PR", "merge", "approve" → pr-approver
-- "review code quality" → brutal-code-reviewer
-- "review UI/UX", "analyze design" → frontend-ux-analyst
-- "analyze data", "statistics", "explore" → eda-analyst
-- "explain model", "ML architecture" → ml-theory-advisor
-- "deploy", "production", "pipeline" → mlops-engineer
+### Priority 5: Implementation keywords → `developer`
+Only if no higher-priority rule matched:
+- "add", "implement", "create", "build", "fix", "change", "update", "modify"
+- "optimize", "refactor", "debug", "improve", "speed up", "configure", "set up", "migrate"
+- Any ticket that requires CODE CHANGES and didn't match a domain rule above
 
-**ML methodology → `ml-theory-advisor`:**
-- "leakage", "overfitting", "underfitting", "regularization", "bias", "variance"
-- "validation strategy", "cross-validation design", "model selection theory"
-
-**MLOps infrastructure → `mlops-engineer`:**
-- "retraining", "drift", "monitoring", "serving", "canary", "rollback", "A/B test"
-- "containerize", "dockerize", "CI/CD", "model registry"
-
-**ML feature design → `feature-engineering-analyst`:**
-- "features" + data context ("data", "dataset", "behavior", "customer", "signals")
-- "feature importance", "feature selection", "interaction terms", "lag features"
-
-## When Uncertain
-
-If a ticket doesn't clearly match an agent:
-1. Assign to `orchestrator` for triage
-2. Or leave unassigned and report the ambiguity
-
-Always explain your reasoning when assigning.
+### Priority 6: Fallback → `orchestrator`
+If no rule matches, assign to `orchestrator` for triage.
 
 ## Contextual Disambiguation
 
-Some keywords are ambiguous. Use surrounding context to route correctly:
+When a keyword is ambiguous, use surrounding context:
 
 | Keyword | + Context | Route To |
 |---------|-----------|----------|
 | "pipeline" | + "slow", "optimize", "refactor" | `developer` |
 | "pipeline" | + "deploy", "production", "serve" | `mlops-engineer` |
 | "pipeline" | + "leakage", "features", "data quality" | `ml-theory-advisor` |
-| "features" | + "add", "build", "implement" (software) | `developer` |
-| "features" | + "data", "dataset", "behavior" (ML) | `feature-engineering-analyst` |
+| "features" | + "add" in software context ("button", "page", "UI") | `developer` |
+| "features" | + "data", "dataset", "behavior", "customer" (ML) | `feature-engineering-analyst` |
 | "model" | + "deploy", "serve", "monitor" | `mlops-engineer` |
-| "model" | + "accuracy", "overfitting", "leakage" | `ml-theory-advisor` |
+| "model" | + "overfitting", "leakage", "train vs test" | `ml-theory-advisor` |
+| "accuracy" | + "dropped", "data update", "data change" | `eda-analyst` |
+| "accuracy" | + "train vs test", "architecture", "hyperparameters" | `ml-theory-advisor` |
 
 ## Agent Report Bus (v1.2.0)
 

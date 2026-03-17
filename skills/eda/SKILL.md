@@ -14,8 +14,8 @@ description: Perform exploratory data analysis on any dataset. Generates compreh
 ## Workflow
 
 1. **Data Overview** - Load dataset, display shape, columns, data types, first/last rows
-2. **Data Quality Assessment** - Missing values, duplicates, type mismatches, constant columns
-3. **Statistical Summary** - Descriptive stats for numerical, value counts for categorical, outlier detection
+2. **Data Quality Assessment** - Missing values, duplicates (exact and near-duplicate on key columns), type mismatches, constant columns, date range validation (no future dates, no impossibly old dates), categorical label consistency (case variants like "Active"/"ACTIVE", semantic aliases like "NY"/"New York")
+3. **Statistical Summary** - Descriptive stats for numerical, value counts for categorical, outlier detection (IQR or z-score), domain-invalid ranges (e.g., negative ages, negative prices)
 4. **Distribution Analysis** - Histograms, bar charts, box plots
 5. **Correlation Analysis** - Correlation matrix, heatmap, highly correlated pairs (>0.8 or <-0.8)
 6. **Target Variable Analysis** - Class distribution, feature importance vs target

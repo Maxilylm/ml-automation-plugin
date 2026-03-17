@@ -19,11 +19,12 @@ description: Data processing pipeline creation for any tabular data. Handles mis
 ## Workflow
 
 1. **Load and validate data** — Check schema, dtypes, shape
-2. **Split into train/test FIRST** — `train_test_split(stratify=target)` before any transforms
-3. **Build ColumnTransformer** — Numeric: impute + scale. Categorical: impute + encode
-4. **Fit on training data only** — `pipeline.fit(X_train, y_train)`
-5. **Transform both sets** — `X_train_t = pipeline.transform(X_train)`, same for test
-6. **Save pipeline** — `joblib.dump(pipeline, "models/preprocessing_pipeline.joblib")`
+2. **Leakage scan** — Check feature-target correlations (>0.90 = suspicious) and feature-feature correlations (>0.95 = possible derived column). Drop or flag confirmed leaky features before proceeding
+3. **Split into train/test FIRST** — `train_test_split(stratify=target)` before any transforms
+4. **Build ColumnTransformer** — Numeric: impute + scale. Categorical: impute + encode
+5. **Fit on training data only** — `pipeline.fit(X_train, y_train)`
+6. **Transform both sets** — `X_train_t = pipeline.transform(X_train)`, same for test
+7. **Save pipeline** — `joblib.dump(pipeline, "models/preprocessing_pipeline.joblib")`
 
 ## Common Transformers
 

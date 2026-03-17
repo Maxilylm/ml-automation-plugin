@@ -53,6 +53,34 @@ numerical_cols = col_types["numerical"]
 categorical_cols = col_types["categorical"]
 ```
 
+### 1b. Feature-Target Leakage Scan
+
+Before building the pipeline, check for leakage signals:
+
+```python
+import numpy as np
+
+# Check feature-target correlations
+target = df[target_col]
+num_features = df.select_dtypes('number').drop(columns=[target_col], errors='ignore')
+correlations = num_features.corrwith(target).abs().sort_values(ascending=False)
+high_corr = correlations[correlations > 0.90]
+if len(high_corr) > 0:
+    print("WARNING: Features with >0.90 correlation to target (possible leakage):")
+    print(high_corr)
+
+# Check for derived columns (feature-feature near-perfect correlation)
+corr_matrix = num_features.corr().abs()
+for i in range(len(corr_matrix)):
+    for j in range(i+1, len(corr_matrix)):
+        if corr_matrix.iloc[i, j] > 0.95:
+            print(f"WARNING: {corr_matrix.columns[i]} vs {corr_matrix.columns[j]}: {corr_matrix.iloc[i,j]:.3f} — possible derived column")
+
+# Drop confirmed leaky features
+# leaky_cols = [...]
+# df = df.drop(columns=leaky_cols)
+```
+
 ### 2. Missing Value Strategy
 - **Numerical**: Median imputation (robust to outliers) or mean
 - **Categorical**: Mode imputation or 'Unknown' category
@@ -122,8 +150,19 @@ preprocessor = ColumnTransformer([
 - Interaction features
 - Domain-specific transformations
 
+### 7. Save Pipeline Artifact
+
+```python
+import joblib, os
+os.makedirs("models", exist_ok=True)
+joblib.dump(preprocessor, "models/preprocessing_pipeline.joblib")
+print(f"Pipeline saved to models/preprocessing_pipeline.joblib")
+```
+
 ## Data Leakage Prevention Checklist
 
+- [ ] Run leakage scan (step 1b) — no feature-target correlation >0.90
+- [ ] No derived columns (feature-feature correlation >0.95)
 - [ ] Split data BEFORE preprocessing
 - [ ] Fit transformers on training data ONLY
 - [ ] Transform (not fit_transform) on test data
@@ -134,8 +173,10 @@ preprocessor = ColumnTransformer([
 
 Provide:
 1. Column type identification
-2. Missing value analysis and strategy
-3. Complete preprocessing pipeline code
-4. Instructions for fitting and transforming
+2. Leakage scan results (any flagged/dropped features)
+3. Missing value analysis and strategy
+4. Complete preprocessing pipeline code
+5. Saved pipeline artifact path
+6. Instructions for fitting and transforming
 
 **IMPORTANT**: After creating the preprocessing pipeline, invoke the `ml-theory-advisor` agent to verify no data leakage risks exist in the pipeline design.
