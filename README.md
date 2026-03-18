@@ -2,7 +2,7 @@
 
 End-to-end machine learning automation workflow for AI coding assistants. Takes you from raw data to deployed model with interactive dashboard — orchestrated by specialized AI agents.
 
-Supports **Claude Code**, **Cursor**, **Codex**, and **OpenCode**.
+Supports **Claude Code**, **GitHub Copilot**, **Cursor**, **Codex**, and **OpenCode**.
 
 ## Quick Start
 
@@ -111,6 +111,28 @@ git clone https://github.com/maxilylm/ml-automation-plugin.git
 claude --plugin-dir /path/to/ml-automation-plugin
 ```
 
+### GitHub Copilot
+
+**Option 1: Install as plugin (VS Code / Copilot CLI)**
+
+```bash
+# If you have a marketplace configured:
+copilot plugin install ml-automation@<marketplace>
+
+# Or install locally:
+git clone https://github.com/maxilylm/ml-automation-plugin.git
+copilot plugin install ./ml-automation-plugin/.copilot
+```
+
+**Option 2: Personal skills (Copilot CLI)**
+
+```bash
+git clone https://github.com/maxilylm/ml-automation-plugin.git
+ln -s $(pwd)/ml-automation-plugin/skills ~/.copilot/skills/ml-automation
+```
+
+Skills and agents are automatically discovered. The `.copilot/` directory contains the plugin manifest with `*.agent.md` symlinks for Copilot's naming convention.
+
 ### Cursor
 
 ```bash
@@ -166,6 +188,7 @@ Place the repo (or symlink it) where Cursor discovers plugins. The `.cursor-plug
 | Platform | Command |
 |----------|---------|
 | Claude Code | Run `/plugin` → Update marketplace |
+| GitHub Copilot | `copilot plugin update ml-automation` or `cd <plugin-path> && git pull` |
 | Codex | `cd ~/.codex/ml-automation && git pull` |
 | OpenCode | `cd ~/.config/opencode/ml-automation && git pull` |
 | Cursor | `cd <plugin-path> && git pull` |
