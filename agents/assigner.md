@@ -32,6 +32,16 @@ When invoked, you:
 | `feature-engineering-analyst` | Feature design, data features |
 | `orchestrator` | Complex multi-step coordination |
 
+### Extension Agent Discovery
+
+At the start of routing, discover extension agents:
+
+1. Use Glob to scan: `.claude/plugins/*/agents/*.md` and `~/.claude/plugins/*/agents/*.md`
+2. Read YAML frontmatter of each agent file
+3. Include agents where `extends: ml-automation` is present
+4. Extract `routing_keywords` for each extension agent
+5. These agents are available for routing in addition to the core agents above
+
 ## How to Assign
 
 ```bash
@@ -80,6 +90,15 @@ If ANY of these appear, route to ml-theory-advisor:
 If "features" appears with data context, route here even if "add" or "create" also appear:
 - "features" + ("data", "dataset", "behavior", "customer", "signals", "columns")
 - "feature importance", "feature selection", "interaction terms", "lag features"
+
+### Priority 2.5: Extension Agent Routing
+
+For each discovered extension agent, check if its `routing_keywords` match the ticket text:
+- Compare each keyword against the ticket description (case-insensitive)
+- If one or more keywords match, this agent is a candidate
+- If multiple extension agents match, prefer the one with the highest specificity ratio:
+  `matched_keywords / total_keywords` (a specialist with 3/4 matching beats a generalist with 3/10)
+- Extension agents NEVER override core agent routing — they only match when no core agent (Priority 1-2) has already matched
 
 ### Priority 3: Review/analysis tasks → Analysts
 - "review PR", "merge", "approve" → `pr-approver`
