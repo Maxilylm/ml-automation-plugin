@@ -1,0 +1,38 @@
+{
+  "skill_name": "evaluate",
+  "evals": [
+    {
+      "id": 10,
+      "name": "plausibility-checks-integration",
+      "prompt": "I've trained a churn prediction model on eda-workspace/test-datasets/churn_data.csv with target='churned'. Can you run business plausibility checks? I expect tenure and monthly_charges to be important predictors, and the churn probability should be between 0 and 1.",
+      "expected_output": "Should run validate_business_plausibility() with domain expectations and report results including prediction range, feature importance sanity, and prediction distribution checks.",
+      "assertions": [
+        {
+          "id": "plaus-runs-checks",
+          "text": "Runs business plausibility checks using validate_business_plausibility()",
+          "type": "content_check"
+        },
+        {
+          "id": "plaus-prediction-range",
+          "text": "Validates predictions fall within expected range (0 to 1 for classification)",
+          "type": "content_check"
+        },
+        {
+          "id": "plaus-feature-importance",
+          "text": "Checks feature importance against expected top features",
+          "type": "content_check"
+        },
+        {
+          "id": "plaus-distribution",
+          "text": "Verifies prediction distribution is not degenerate",
+          "type": "content_check"
+        },
+        {
+          "id": "plaus-report-saved",
+          "text": "Saves plausibility report to report bus",
+          "type": "content_check"
+        }
+      ]
+    }
+  ]
+}

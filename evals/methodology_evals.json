@@ -1,0 +1,53 @@
+{
+  "skill_name": "methodology",
+  "evals": [
+    {
+      "id": 1,
+      "name": "methodology-after-pipeline",
+      "prompt": "I just finished running a full pipeline on our churn dataset. Can you generate a methodology document that explains our analytical approach? I need it for our stakeholders.",
+      "expected_output": "Should generate a comprehensive methodology document covering all 12 sections: objective, data description, EDA summary, feature engineering, statistical methods, assumptions, decision points, model results, intermediate artefacts, reproducibility guide, lessons learned, and appendix.",
+      "assertions": [
+        {
+          "id": "meth-objective",
+          "text": "Includes objective/business question section",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-data-desc",
+          "text": "Includes data description with shape, columns, and data fingerprint",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-methods",
+          "text": "Documents statistical methods and model selection rationale",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-assumptions",
+          "text": "Lists assumptions made during analysis",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-decisions",
+          "text": "Documents key decision points from the analysis",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-reproducibility",
+          "text": "Includes reproducibility guide with data fingerprint and seeds",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-artifacts",
+          "text": "Lists intermediate artefacts with file paths",
+          "type": "content_check"
+        },
+        {
+          "id": "meth-saved",
+          "text": "Saves methodology document to reports/ directory",
+          "type": "file_check"
+        }
+      ]
+    }
+  ]
+}

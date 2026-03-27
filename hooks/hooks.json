@@ -74,6 +74,10 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-agent-report.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-trace.sh"
           }
         ]
       }

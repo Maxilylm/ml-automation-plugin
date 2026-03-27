@@ -1,0 +1,48 @@
+{
+  "skill_name": "benchmark",
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-pipeline-benchmark",
+      "prompt": "Run a full pipeline benchmark on eda-workspace/test-datasets/churn_data.csv with target='churned'. I need completeness, correctness, and reproducibility scores.",
+      "expected_output": "Should execute full pipeline and score on completeness (EDA, features, model, eval, docs), correctness (no leakage, metrics valid), and reproducibility (fingerprint, seeds, methodology doc).",
+      "assertions": [
+        {
+          "id": "bench-eda-complete",
+          "text": "EDA report generated with quality assessment",
+          "type": "content_check"
+        },
+        {
+          "id": "bench-features-assessed",
+          "text": "Feature engineering with leakage risk assessment",
+          "type": "content_check"
+        },
+        {
+          "id": "bench-models-compared",
+          "text": "Multiple models compared with metrics",
+          "type": "content_check"
+        },
+        {
+          "id": "bench-cv-metrics",
+          "text": "Cross-validation metrics reported, not just test set",
+          "type": "content_check"
+        },
+        {
+          "id": "bench-methodology-doc",
+          "text": "Methodology document generated",
+          "type": "file_check"
+        },
+        {
+          "id": "bench-data-fingerprint",
+          "text": "Data fingerprint and random seeds recorded",
+          "type": "content_check"
+        },
+        {
+          "id": "bench-plausibility-run",
+          "text": "Business plausibility checks executed",
+          "type": "content_check"
+        }
+      ]
+    }
+  ]
+}

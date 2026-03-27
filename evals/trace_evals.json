@@ -1,0 +1,46 @@
+{
+  "skill_name": "trace",
+  "evals": [
+    {
+      "id": 1,
+      "name": "trace-log-display",
+      "prompt": "Show me the traceability log from this project. I want to see what all the agents did.",
+      "expected_output": "Should display a chronological event timeline with icons, agent names, event types, and actions. Should handle the case where no log exists with a helpful message.",
+      "assertions": [
+        {
+          "id": "trace-reads-log",
+          "text": "Attempts to load traceability-log.jsonl from platform directories",
+          "type": "content_check"
+        },
+        {
+          "id": "trace-formats-output",
+          "text": "Displays events with timestamps, event types, and agent names",
+          "type": "content_check"
+        },
+        {
+          "id": "trace-handles-empty",
+          "text": "Provides helpful message if no trace log exists",
+          "type": "content_check"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "trace-filtered-view",
+      "prompt": "Show me just the decisions and reflections from the traceability log. I want to understand why certain choices were made.",
+      "expected_output": "Should filter trace log to show only 'decision' and 'reflection' event types.",
+      "assertions": [
+        {
+          "id": "trace-filter-type",
+          "text": "Filters events by event_type (decision, reflection)",
+          "type": "content_check"
+        },
+        {
+          "id": "trace-shows-details",
+          "text": "Shows decision rationale and reflection outcomes",
+          "type": "content_check"
+        }
+      ]
+    }
+  ]
+}

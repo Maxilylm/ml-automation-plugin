@@ -1,0 +1,33 @@
+{
+  "skill_name": "feedback",
+  "evals": [
+    {
+      "id": 1,
+      "name": "feedback-collection",
+      "prompt": "I want to report a bug. The EDA command didn't detect duplicate rows in my dataset even though there were obvious duplicates.",
+      "expected_output": "Should collect structured feedback with category (bug), severity, description, and save to report bus.",
+      "assertions": [
+        {
+          "id": "feedback-categorizes",
+          "text": "Categorizes as bug report",
+          "type": "content_check"
+        },
+        {
+          "id": "feedback-gathers-details",
+          "text": "Asks for or documents the specific command involved and expected behavior",
+          "type": "content_check"
+        },
+        {
+          "id": "feedback-saves",
+          "text": "Saves structured feedback to report bus via save_agent_report",
+          "type": "content_check"
+        },
+        {
+          "id": "feedback-confirms",
+          "text": "Displays confirmation that feedback was recorded",
+          "type": "content_check"
+        }
+      ]
+    }
+  ]
+}
