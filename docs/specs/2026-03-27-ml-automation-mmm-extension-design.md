@@ -44,6 +44,9 @@ Create `ml-automation-mmm` as a self-contained Claude Code plugin that:
 }
 ```
 
+**Note:** The `extends: ml-automation` field lives in individual agent frontmatter, not in `plugin.json`. The manifest's `dependencies` field documents the core requirement for humans and future tooling. Claude Code discovers extensions by scanning agent files for the `extends` field — there is no plugin-level `extends` key.
+```
+
 ## Section 2: Agent Definitions
 
 ### mmm-methodologist
@@ -68,9 +71,16 @@ Body: Existing mmm-methodologist content (retrieval rules, deliverables, next st
 ## Relevance Gate (when running at a hook point)
 
 When invoked at a core workflow hook point (not via direct command):
-1. Read `.claude/reports/eda-analyst_report.json`
-2. Check if the dataset contains marketing/media spend columns (keywords: spend, cost, impressions, clicks, media, channel, campaign, ad, marketing)
-3. If NO marketing columns detected: write `save_agent_report("mmm-methodologist", {"status": "skipped", "reason": "No marketing spend columns detected"})` and exit
+1. Read the EDA report at `.claude/reports/eda-analyst_report.json`
+2. Check if the dataset contains marketing/media spend columns by looking for keywords in column names: spend, cost, impressions, clicks, media, channel, campaign, ad, marketing
+3. If NO marketing columns detected — write a skip report and exit:
+   ```python
+   from ml_utils import save_agent_report
+   save_agent_report("mmm-methodologist", {
+       "status": "skipped",
+       "reason": "No marketing spend columns detected in dataset"
+   })
+   ```
 4. If marketing columns detected: proceed with full methodology review
 ```
 
@@ -90,7 +100,25 @@ hooks_into:
 ---
 ```
 
-Body: Existing mmm-validator content. Add same relevance gate pattern (check for MMM model artifacts in `models/` or `reports/mmm/`).
+Body: Existing mmm-validator content. Add relevance gate preamble:
+
+```markdown
+## Relevance Gate (when running at a hook point)
+
+When invoked at a core workflow hook point (not via direct command):
+1. Check if MMM artifacts exist:
+   - Look for `reports/mmm/` directory (MMM project reports)
+   - Look for PyMC/Bayesian model artifacts in `models/` (*.nc, *mmm*, *bayesian*)
+2. If NO MMM artifacts found — write a skip report and exit:
+   ```python
+   from ml_utils import save_agent_report
+   save_agent_report("mmm-validator", {
+       "status": "skipped",
+       "reason": "No MMM model artifacts found"
+   })
+   ```
+3. If MMM artifacts found: proceed with full validation
+```
 
 ### mmm-communicator
 
@@ -119,9 +147,9 @@ Each source command maps 1:1 to a skill + command pair following core convention
 | `bmmm-smoke` | `skills/bmmm-smoke/SKILL.md` | `commands/bmmm-smoke.md` | `/bmmm-smoke` |
 | `final-mmm-report` | `skills/final-mmm-report/SKILL.md` | `commands/final-mmm-report.md` | `/final-mmm-report` |
 | `mmm-communicate` | `skills/mmm-communicate/SKILL.md` | `commands/mmm-communicate.md` | `/mmm-communicate` |
-| `mmm-methodologist` | `skills/mmm-methodologist/SKILL.md` | `commands/mmm-methodologist.md` | Gate command |
+| `mmm-methodologist` | `skills/mmm-methodologist/SKILL.md` | `commands/mmm-methodologist.md` | Gate command (source `/mmm-methodologist`) |
 | `ensure-bmmm-env` | `skills/ensure-bmmm-env/SKILL.md` | `commands/ensure-bmmm-env.md` | `/ensure-bmmm-env` |
-| `self-assess` | `skills/self-assess/SKILL.md` | `commands/self-assess.md` | `/self-assess` |
+| `self-assess` | `skills/self-assess/SKILL.md` | `commands/self-assess.md` | `/self-assess` (MMM-domain-specific: aggregates `feedback/mmm/` self-assessments) |
 
 ### Skill Frontmatter Pattern
 
@@ -190,7 +218,7 @@ ml-automation-mmm/
 │       │   ├── data_readiness_mmm.md
 │       │   ├── design_memo_mmm.md
 │       │   └── delivery_summary_mmm.md
-│       ├── playbook/
+│       ├── playbook/             # Copy all files from source repo playbook/
 │       ├── validation_checklist_mmm.yaml
 │       └── BMMM-env/            # Environment config (environment.yaml, requirements.txt)
 ├── scripts/
@@ -221,7 +249,9 @@ MMM-specific artifacts (design memo, data readiness, final report) go to `report
 
 ## Section 6: mmm_utils.py
 
-Thin utility layer for MMM-specific operations. Imports from core `ml_utils`:
+Thin utility layer for MMM-specific operations. Imports from core `ml_utils`.
+
+**Distribution:** MMM commands that use `mmm_utils.py` must copy it to the user's project alongside `ml_utils.py` (same Stage 0 pattern). The `/start-mmm-project` Stage 0 copies both `ml_utils.py` (from core) and `mmm_utils.py` (from this plugin's `templates/`) to the project's `src/` directory. Other standalone MMM commands should check for both files.
 
 ```python
 from ml_utils import save_agent_report, load_agent_report, log_experiment
@@ -253,7 +283,7 @@ def decompose_contributions(model, X):
 5. **Knowledge base** — copied from source repo
 6. **Scripts** — copied from source repo
 7. **mmm_utils.py** — new thin utility layer
-8. **hooks.json** — empty or minimal (MMM-specific hooks if needed)
+8. **hooks.json** — empty `{"hooks": {}}`. Hook integration with core workflows is handled via the `hooks_into` frontmatter field on agents, not via hooks.json. This file exists for future MMM-specific hooks (e.g., post-training validation) but ships empty.
 9. **README.md** — installation and usage guide
 
 ### Not In Scope
