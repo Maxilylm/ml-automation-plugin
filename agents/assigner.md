@@ -38,7 +38,7 @@ At the start of routing, discover extension agents:
 
 1. Use Glob to scan: `.claude/plugins/*/agents/*.md` and `~/.claude/plugins/*/agents/*.md`
 2. Read YAML frontmatter of each agent file
-3. Include agents where `extends: ml-automation` is present
+3. Include agents where `extends: spark` is present
 4. Extract `routing_keywords` for each extension agent
 5. These agents are available for routing in addition to the core agents above
 

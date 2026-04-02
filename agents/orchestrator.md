@@ -40,7 +40,7 @@ At workflow start, discover extension agents from all installed plugins:
    - `.claude/plugins/*/agents/*.md`
    - `~/.claude/plugins/*/agents/*.md`
 2. Read each agent file's YAML frontmatter
-3. Include agents where `extends: ml-automation` is present
+3. Include agents where `extends: spark` is present
 4. Extract `routing_keywords` and `hooks_into` fields
 5. If a `hooks_into` value does not match a known hook point, log a warning:
    "WARNING: Agent {name} declares unknown hook point '{value}' — skipping that hook"
@@ -55,7 +55,7 @@ When a workflow reaches a named hook point:
 1. Check discovered extension agents for `hooks_into` containing this hook point
 2. **Timing rule:** All `after-*` hook points fire AFTER any reflection gates for that stage have passed. Extension agents receive gate-approved output only — never intermediate pre-gate data.
 3. For each matching extension agent, spawn it with this context:
-   "You are running at hook point '{hook_point}' in the core ml-automation workflow.
+   "You are running at hook point '{hook_point}' in the core spark workflow.
     Read all prior agent reports in .claude/reports/ for context.
     WHEN DONE: Write your report using save_agent_report('{agent_name}', {...})"
    If multiple independent extensions hook into the same point, they MAY be spawned in parallel (same pattern as core parallel execution groups).

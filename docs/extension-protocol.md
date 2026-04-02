@@ -2,16 +2,16 @@
 
 ## Overview
 
-The ml-automation plugin supports extensions — separate Claude Code plugins that add domain-specific agents, skills, and commands while integrating with core workflows.
+The spark plugin supports extensions — separate Claude Code plugins that add domain-specific agents, skills, and commands while integrating with core workflows.
 
 ## Prerequisites
 
-Extensions require the `ml-automation` core plugin to be installed. Your extension's `plugin.json` should declare this:
+Extensions require the `spark` core plugin to be installed. Your extension's `plugin.json` should declare this:
 
 ```json
 {
   "dependencies": {
-    "ml-automation": ">=1.8.0"
+    "spark": ">=1.8.0"
   }
 }
 ```
@@ -22,7 +22,7 @@ Extension agents must include these fields in their YAML frontmatter:
 
 | Field | Required | Purpose |
 |---|---|---|
-| `extends: ml-automation` | Yes | Declares this agent as part of the ml-automation ecosystem |
+| `extends: spark` | Yes | Declares this agent as part of the spark ecosystem |
 | `routing_keywords` | No | List of terms for the assigner to route tasks to this agent |
 | `hooks_into` | No | List of core hook points where this agent should be spawned |
 
@@ -33,7 +33,7 @@ Extension agents must include these fields in their YAML frontmatter:
 name: mmm-analyst
 description: Media Mix Modeling analysis and optimization
 model: sonnet
-extends: ml-automation
+extends: spark
 routing_keywords: [mmm, media mix, marketing mix, channel attribution, adstock]
 hooks_into:
   - after-eda
@@ -67,14 +67,14 @@ Hook point names are a versioned contract. The core plugin will NOT rename or re
 ## Extension Plugin Structure
 
 ```
-ml-automation-{name}/
+spark-{name}/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── agents/
-│   └── {agent-name}.md       # Must include extends: ml-automation
+│   └── {agent-name}.md       # Must include extends: spark
 ├── skills/
 │   └── {skill-name}/
-│       └── SKILL.md           # May include extends: ml-automation
+│       └── SKILL.md           # May include extends: spark
 ├── commands/
 │   └── {command-name}.md      # Can spawn core agents directly
 ├── templates/

@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "ml-automation-marketplace",
+  "name": "spark-marketplace",
   "description": "End-to-end ML automation plugins for Claude Code",
   "owner": {
     "name": "Maximo Lorenzo y Losada",
@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "ml-automation-core",
+      "name": "spark-core",
       "description": "End-to-end ML automation workflow with Extension Protocol. 10 specialized agents, shared report bus, reflection gates, MLOps registry, hook points for extensions, and quality gates.",
       "version": "1.8.0",
       "author": {
@@ -22,8 +22,8 @@
       "homepage": "https://github.com/Maxilylm/ml-automation-plugin"
     },
     {
-      "name": "ml-automation-mmm",
-      "description": "Media Mix Modeling extension for ml-automation. Bayesian MMM with adstock, saturation, channel attribution, and client-ready reporting.",
+      "name": "spark-mmm",
+      "description": "Media Mix Modeling extension for spark. Bayesian MMM with adstock, saturation, channel attribution, and client-ready reporting.",
       "version": "0.2.0",
       "author": {
         "name": "Maximo Lorenzo y Losada"
@@ -34,10 +34,10 @@
       },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-mmm",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-snowflake",
+      "name": "spark-snowflake",
       "description": "Snowflake development and ML automation extension. SQL development, Snowpark pipelines, ML training, and deployment to Snowflake Model Registry and Streamlit in Snowflake.",
       "version": "0.2.0",
       "author": {
@@ -49,117 +49,117 @@
       },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-snowflake",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-llm",
+      "name": "spark-llm",
       "description": "LLM and GenAI automation extension. Prompt engineering, RAG pipelines, LLM evaluation, fine-tuning workflows, and GenAI deployment.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-llm.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-llm",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-timeseries",
+      "name": "spark-timeseries",
       "description": "Time series analysis and forecasting extension. Prophet, ARIMA, neural forecasting, seasonality decomposition, and anomaly detection.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-timeseries.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-timeseries",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-databricks",
+      "name": "spark-databricks",
       "description": "Databricks development and ML automation extension. Spark MLlib, Delta Lake, Unity Catalog, MLflow integration, and Databricks deployment.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-databricks.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-databricks",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-nlp",
+      "name": "spark-nlp",
       "description": "NLP and text analytics extension. Text preprocessing, embeddings, topic modeling, sentiment analysis, NER, and text classification.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-nlp.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-nlp",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-ab-testing",
+      "name": "spark-ab-testing",
       "description": "A/B testing and causal inference extension. Experiment design, power analysis, Bayesian A/B testing, and causal impact estimation.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-ab-testing.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-ab-testing",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-drift",
+      "name": "spark-drift",
       "description": "Production monitoring extension. Data drift detection, model drift, PSI/CSI, alerting pipelines, and performance degradation tracking.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-drift.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-drift",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-explainability",
+      "name": "spark-explainability",
       "description": "Model explainability and fairness extension. SHAP, LIME, fairness audits, model cards, and regulatory compliance documentation.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-explainability.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-explainability",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-aws",
+      "name": "spark-aws",
       "description": "AWS ML platform extension. SageMaker training, S3 data management, Lambda deployment, and AWS ML infrastructure automation.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-aws.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-aws",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-gcp",
+      "name": "spark-gcp",
       "description": "Google Cloud ML platform extension. Vertex AI training, BigQuery ML, Cloud Storage, Cloud Run deployment, and GCP ML infrastructure.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-gcp.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-gcp",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-azure",
+      "name": "spark-azure",
       "description": "Azure ML platform extension. Azure ML training, Synapse Analytics, Blob Storage, Azure Functions deployment, and Azure ML infrastructure.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-azure.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-azure",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     },
     {
-      "name": "ml-automation-cv",
+      "name": "spark-cv",
       "description": "Computer vision extension. Image preprocessing, CNN training, object detection, data augmentation, and CV model deployment.",
       "version": "0.2.0",
       "author": { "name": "Maximo Lorenzo y Losada" },
       "source": { "source": "url", "url": "https://github.com/Maxilylm/ml-automation-cv.git" },
       "category": "development",
       "homepage": "https://github.com/Maxilylm/ml-automation-cv",
-      "dependencies": ["ml-automation-core"]
+      "dependencies": ["spark-core"]
     }
   ]
 }
