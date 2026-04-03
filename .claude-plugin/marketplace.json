@@ -58,7 +58,7 @@
     {
       "name": "spark-llm",
       "description": "LLM and GenAI automation extension. Prompt engineering, RAG pipelines, LLM evaluation, fine-tuning workflows, and GenAI deployment.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "author": {
         "name": "Maximo Lorenzo y Losada"
       },
