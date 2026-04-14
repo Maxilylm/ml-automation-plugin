@@ -29,12 +29,46 @@ description: Train a machine learning model with proper data splitting, preproce
 
 ## Task-Type Model Selection
 
-| Task Type | Start With | Then Try |
-|-----------|-----------|----------|
-| Binary classification | LogisticRegression, RandomForest | XGBoost, LightGBM |
-| Multi-class | RandomForest, XGBoost | Neural network |
-| Regression | LinearRegression, Ridge | RandomForest, XGBoost |
-| Time series | ARIMA, Prophet | LightGBM with lag features |
+| Task Type | Start With | Then Try | Advanced |
+|-----------|-----------|----------|----------|
+| Binary classification | LogisticRegression, RandomForest | XGBoost, LightGBM | StackingClassifier |
+| Multi-class | RandomForest, XGBoost | Neural network | StackingClassifier |
+| Regression | LinearRegression, Ridge | RandomForest, XGBoost | StackingRegressor |
+| Time series | ARIMA, Prophet | LightGBM with lag features | — |
+
+## Stacking Ensemble for Regression (v1.9.0)
+
+When individual models plateau, use `StackingRegressor` to combine diverse base learners:
+
+```python
+from sklearn.ensemble import StackingRegressor, RandomForestRegressor
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
+
+estimators = [
+    ("ridge", Ridge()),
+    ("rf", RandomForestRegressor(n_estimators=100, random_state=42)),
+]
+# Optional: add XGBoost/LightGBM if installed
+try:
+    from xgboost import XGBRegressor
+    estimators.append(("xgb", XGBRegressor(n_estimators=100, random_state=42)))
+except ImportError:
+    pass
+
+stacking = StackingRegressor(
+    estimators=estimators,
+    final_estimator=Ridge(),
+    cv=5, n_jobs=-1
+)
+
+# Tune the final estimator's alpha via GridSearchCV
+param_grid = {"final_estimator__alpha": [0.01, 0.1, 1.0, 10.0]}
+grid = GridSearchCV(stacking, param_grid, cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1)
+grid.fit(X_train, y_train)
+```
+
+Use stacking when: baseline regression R2 < 0.90 and you have >500 training samples. Skip for very small datasets where the added complexity causes overfitting.
 
 ## Report Bus Integration (v1.2.0)
 

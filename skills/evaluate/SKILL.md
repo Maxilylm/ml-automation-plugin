@@ -17,8 +17,11 @@ description: Comprehensive model evaluation with appropriate metrics, visualizat
 3. **Confusion matrix** — `sklearn.metrics.confusion_matrix` + classification report
 4. **ROC curves** — Per-class ROC with AUC values
 5. **Feature importance** — Model-specific (tree: `.feature_importances_`, linear: `.coef_`)
-6. **Error analysis** — Examine worst predictions, identify patterns in misclassifications
-7. **Summary** — Actionable recommendations (retrain, add features, adjust threshold)
+6. **SHAP analysis** — Model-agnostic feature attribution via `shap.Explainer`. Generate summary plot, dependence plots for top features, and force plots for individual predictions. Install with `pip install shap` if missing.
+7. **Calibration curve** (classification) — `sklearn.calibration.CalibrationDisplay.from_estimator` to verify predicted probabilities match observed frequencies. If poorly calibrated, recommend `CalibratedClassifierCV`.
+8. **Learning curve** — `sklearn.model_selection.learning_curve` to diagnose bias vs variance. Plot train and validation scores against training set size. High gap = overfitting, both low = underfitting.
+9. **Error analysis** — Examine worst predictions, identify patterns in misclassifications
+10. **Summary** — Actionable recommendations (retrain, add features, adjust threshold, recalibrate)
 
 ## Task-Type Awareness
 

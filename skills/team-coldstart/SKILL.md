@@ -17,7 +17,7 @@ description: Launch a full data workflow from raw data to deployed solution with
 3. Preprocess and engineer features
 4. Train and tune models
 5. Evaluate model performance
-6. Build interactive dashboard
+6. **Generate Streamlit dashboard** (v1.9.0) — Auto-generate `dashboard/app.py` with live inference, EDA visualizations, and model performance panels. Reads real values from report bus artifacts (never uses placeholder data). Includes `dashboard/requirements.txt` with pinned deps. Falls back to a minimal working dashboard if model artifacts are missing.
 7. Deploy to target environment
 8. Generate completion report
 
@@ -58,6 +58,23 @@ Convention-based MLOps registries track the full model lifecycle:
 | Model Registry | mlops-engineer | Stage 5c (Validation) |
 
 Stage 5c (MLOps Registry Validation) ensures all registries are complete and lineage is traceable from data to deployed model. Use `/registry` to inspect.
+
+## Streamlit Dashboard Generation (v1.9.0)
+
+Stage 6 generates a self-contained Streamlit dashboard at `dashboard/app.py`. The dashboard MUST:
+
+1. **Read real data** — Load metrics, figures, and model artifacts from report bus outputs. Never hardcode placeholder values.
+2. **Include these panels**:
+   - Dataset overview (row count, column types, target distribution)
+   - Key EDA visualizations (correlations, distributions)
+   - Model performance metrics (from evaluation report)
+   - Feature importance chart (from evaluation or SHAP analysis)
+   - Live inference widget — load the trained model and let users input feature values for predictions
+3. **Generate requirements.txt** — Pin streamlit, pandas, plotly, joblib, and any model-specific deps.
+4. **Validate on generation** — Run syntax check and import validation before marking Stage 6 complete.
+5. **Graceful degradation** — If model artifacts are missing (analysis-only mode), show EDA panels only.
+
+Startup: `pip install -r dashboard/requirements.txt && streamlit run dashboard/app.py`
 
 ## Self-Check Loops (v1.4.0)
 

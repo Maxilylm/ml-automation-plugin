@@ -80,6 +80,38 @@ cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
 - Tune on training/validation data only
 - Never use test set for tuning decisions
 
+### 4b. Stacking Ensemble (v1.9.0) — Regression Datasets
+
+When individual regression models plateau (R2 < 0.90 on CV), try a stacking ensemble:
+```python
+from sklearn.ensemble import StackingRegressor, RandomForestRegressor
+from sklearn.linear_model import Ridge
+
+estimators = [
+    ("ridge", Ridge()),
+    ("rf", RandomForestRegressor(n_estimators=100, random_state=42)),
+]
+try:
+    from xgboost import XGBRegressor
+    estimators.append(("xgb", XGBRegressor(n_estimators=100, random_state=42)))
+except ImportError:
+    pass
+
+stacking = StackingRegressor(
+    estimators=estimators,
+    final_estimator=Ridge(),
+    cv=5, n_jobs=-1
+)
+
+from sklearn.model_selection import GridSearchCV
+param_grid = {"final_estimator__alpha": [0.01, 0.1, 1.0, 10.0]}
+grid = GridSearchCV(stacking, param_grid, cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1)
+grid.fit(X_train, y_train)
+best_stacking = grid.best_estimator_
+```
+
+Only use stacking when you have >500 training samples. For small datasets, stick with a single well-tuned model.
+
 ### 5. Final Evaluation
 - Train final model on full training set
 - Evaluate ONCE on held-out test set
