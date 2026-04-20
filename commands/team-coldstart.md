@@ -244,9 +244,9 @@ After the plan is saved, proceed to Step 2a. Include in the eda-analyst prompt:
 
 Run `validate_stage_output("eda")`. If validation fails, re-spawn eda-analyst with error feedback (max `--max-check` iterations). On persistent failure, `save_lesson()` documenting the issue.
 
-**Step 2b: Run these in PARALLEL** (after EDA completes — they all read the EDA report independently):
+**Step 2b: Run these SEQUENTIALLY** (after EDA completes — one at a time to avoid memory exhaustion):
 
-Spawn ALL THREE agents concurrently using multiple Task tool calls in a single message:
+Spawn each agent one at a time, waiting for each to complete before starting the next:
 
 2. **ml-theory-advisor** - Data quality and leakage review (if ML mode)
    ```
@@ -285,11 +285,11 @@ Spawn ALL THREE agents concurrently using multiple Task tool calls in a single m
    Output: Dashboard design recommendations + agent bus report
    ```
 
-**Wait for all three to complete, then run Step 2b-verify.**
+After all three have completed sequentially, run Step 2b-verify.
 
 #### Step 2b-verify: Report Bus Verification
 
-After all three parallel agents return, check that each wrote its report:
+After all three agents have run, check that each wrote its report:
 
 ```
 For each agent in [ml-theory-advisor, feature-engineering-analyst, frontend-ux-analyst]:
@@ -568,9 +568,9 @@ Methodology validated ✓
 
 Run `validate_stage_output("evaluation")`. If validation fails, re-spawn the evaluation agent with error feedback (max `--max-check` iterations).
 
-### Stage 5b: Post-Training Review (PARALLEL)
+### Stage 5b: Post-Training Review (SEQUENTIAL)
 
-Spawn ALL THREE review agents concurrently:
+Spawn each review agent one at a time, waiting for each to complete before starting the next:
 
 1. **brutal-code-reviewer** - Code quality review
    ```
@@ -596,11 +596,11 @@ Spawn ALL THREE review agents concurrently:
    Output: UX review report + agent bus report
    ```
 
-**Wait for all three to complete, then run Step 5b-verify.**
+After all three have completed sequentially, run Step 5b-verify.
 
 #### Step 5b-verify: Report Bus Verification
 
-After all three review agents return, check that each wrote its report:
+After all three review agents have run, check that each wrote its report:
 
 ```
 For each agent in [brutal-code-reviewer, ml-theory-advisor, frontend-ux-analyst]:
@@ -717,14 +717,33 @@ MODEL LOADING FOR LIVE INFERENCE:
     st.selectbox for categorical with actual unique values from the dataset).
 15. Show prediction result with confidence/probability when available (model.predict_proba).
 
+DESIGN RULES — make this visually distinctive, not generic AI output:
+D1. Choose a dark or light theme and commit to it fully via st.set_page_config + custom CSS injected
+    with st.markdown("""<style>...</style>""", unsafe_allow_html=True).
+D2. Typography: use Google Fonts (loaded via st.markdown <link> tag). Pick a characterful display
+    font for headings (e.g. Syne, Outfit, DM Serif Display, Epilogue) paired with a clean body font.
+    NEVER use default system fonts or Inter/Roboto alone.
+D3. Color palette: define 4-6 CSS variables (--accent, --surface, --bg, --text, --pass, --fail).
+    Use a single dominant accent color (e.g. electric teal #00D4AA, amber #F59E0B, indigo #6366F1)
+    with high contrast. Avoid purple-gradient-on-white (overused AI aesthetic).
+D4. Metrics/KPIs: style st.metric cards with custom CSS — add a colored left border or background
+    tint that matches the accent. Make numbers large and monospaced.
+D5. Charts: use a consistent Plotly template matching the theme. Set plot_bgcolor and
+    paper_bgcolor to match the dashboard background. Use the accent color as the primary series color.
+D6. Section headers: use styled dividers (e.g. a colored rule + uppercase letter-spaced label)
+    instead of plain st.header().
+D7. Sidebar: give it a distinct background color and a project title/logo area at the top.
+
 DASHBOARD STRUCTURE (6 tabs):
 - Sidebar: filters derived from actual categorical columns in the dataset.
   Include a "Reset Filters" button. Show dataset stats (row count, column count) in sidebar.
-- Tab 1 (Overview): KPI metrics computed from df at runtime, summary charts, data quality gauge
+  Style with a distinct background and a project title block at top.
+- Tab 1 (Overview): KPI metrics computed from df at runtime, summary charts, data quality gauge.
+  Style metric cards with custom CSS (colored border, monospaced numbers).
 - Tab 2 (EDA Deep Dive): ALL of these — distribution histograms for every numeric column,
   value counts bar charts for categoricals, correlation heatmap, missing value matrix,
   box plots for outlier detection, pairwise scatter plots for top correlated features,
-  target variable analysis (class balance bar chart if classification)
+  target variable analysis (class balance bar chart if classification).
 - Tab 3 (Model Performance): If HAS_MODEL — confusion matrix heatmap, ROC curve, precision-recall
   curve, feature importance bar chart, model comparison table (if multiple models evaluated).
   If no model — show "No model trained yet" message with recommendations from theory advisor.
@@ -747,51 +766,94 @@ DASHBOARD STRUCTURE (6 tabs):
 - Tab 6 (Data Explorer): Interactive data table with column search, sorting, download.
   Summary statistics table. Ability to filter rows by any column value.
 
-Output: dashboard/app.py with all variables defined and no placeholders.
+Output: dashboard/app.py with all variables defined, no placeholders, and a cohesive visual theme.
 ```
 
-#### Step 6b: Dashboard Smoke Test (max 2 iterations)
+#### Step 6b: Dashboard Smoke Test (max 3 iterations)
 
 After the developer agent writes `dashboard/app.py`, run this validation:
 
 ```python
-import ast, re, importlib, sys
+import ast, re, importlib, sys, types
 
 dashboard_path = "dashboard/app.py"
 errors = []
 
-# 1. Syntax check via ast.parse
 with open(dashboard_path, "r") as f:
     source = f.read()
+
+# 1. Syntax check
 try:
-    ast.parse(source)
+    tree = ast.parse(source)
 except SyntaxError as e:
-    errors.append(f"SyntaxError: {e}")
+    errors.append(f"SyntaxError at line {e.lineno}: {e.msg}")
 
 # 2. Unresolved placeholder check
-placeholders = re.findall(r'"\{[^}]+\}"', source)
+placeholders = re.findall(r'["\'](\{[A-Za-z_][^}]*\})["\']', source)
 if placeholders:
-    errors.append(f"Unresolved placeholders found: {placeholders}")
+    errors.append(f"Unresolved placeholders: {placeholders}")
 
-# 3. Import-level check (catches NameError/ImportError but tolerates Streamlit runtime)
+# 3. Static undefined-name check via AST walk
 if not errors:
+    assigned = set()
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for t in targets:
+                if isinstance(t, ast.Name):
+                    assigned.add(t.id)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                imported.add(alias.asname or alias.name.split(".")[0])
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            assigned.add(node.name)
+        elif isinstance(node, (ast.For, ast.comprehension)):
+            target = node.target if hasattr(node, "target") else None
+            if target and isinstance(target, ast.Name):
+                assigned.add(target.id)
+    # Detect Load-context names that were never assigned or imported (rough heuristic)
+    # Common Streamlit builtins that are safe to ignore:
+    safe_globals = {"st", "pd", "np", "px", "go", "plt", "sns", "joblib", "pickle",
+                    "os", "sys", "json", "re", "datetime", "Path", "glob", "True", "False",
+                    "None", "print", "len", "range", "int", "float", "str", "list", "dict",
+                    "set", "tuple", "zip", "enumerate", "sorted", "min", "max", "sum",
+                    "isinstance", "hasattr", "getattr", "open", "Exception", "type"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            if node.id not in assigned and node.id not in imported and node.id not in safe_globals:
+                errors.append(f"Possible undefined name at line {node.lineno}: '{node.id}'")
+
+# 4. Import-level execution check with fully-mocked streamlit
+#    Catches ImportError, AttributeError, NameError that occur at module load time.
+#    Does NOT silence unknown exceptions — they are reported.
+if not errors:
+    # Build a mock streamlit that accepts any attribute access and any call
+    class _MockModule(types.ModuleType):
+        def __getattr__(self, name):
+            return _MockCallable()
+    class _MockCallable:
+        def __call__(self, *a, **kw): return _MockCallable()
+        def __enter__(self): return _MockCallable()
+        def __exit__(self, *a): pass
+        def __iter__(self): return iter([])
+        def __getattr__(self, name): return _MockCallable()
+
+    mock_st = _MockModule("streamlit")
+    mock_st.session_state = {}
+    saved = sys.modules.copy()
+    sys.modules["streamlit"] = mock_st
     try:
-        # Temporarily mock streamlit to avoid needing a running server
-        import types
-        mock_st = types.ModuleType("streamlit")
-        sys.modules["streamlit"] = mock_st
         spec = importlib.util.spec_from_file_location("dashboard_check", dashboard_path)
         mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except (NameError, ImportError) as e:
-            errors.append(f"Runtime error: {e}")
-        except Exception:
-            pass  # Tolerate other errors (Streamlit runtime, missing data, etc.)
-        finally:
-            sys.modules.pop("streamlit", None)
+        spec.loader.exec_module(mod)
+    except SystemExit:
+        pass  # Streamlit sometimes calls sys.exit() internally — harmless
     except Exception as e:
-        errors.append(f"Import test failed: {e}")
+        errors.append(f"Module-load error ({type(e).__name__}): {e}")
+    finally:
+        sys.modules.clear()
+        sys.modules.update(saved)
 
 if errors:
     print("DASHBOARD VALIDATION FAILED:")
@@ -804,21 +866,27 @@ else:
 **Iteration loop:**
 ```
 iteration = 0
-max_iterations = 2
+max_iterations = 3
 
 while validation fails AND iteration < max_iterations:
   Re-spawn developer with:
-    "DASHBOARD SMOKE TEST FAILED — fix these errors:
+    "DASHBOARD SMOKE TEST FAILED (iteration {iteration+1}/{max_iterations}) — fix ALL of these errors:
      {error_list}
-     Read dashboard/app.py, fix the issues, and rewrite it.
-     Remember: no placeholders, all variables must be defined, load real data."
+     Read dashboard/app.py carefully. Fix every error listed:
+     - SyntaxError: fix the syntax at the indicated line
+     - Unresolved placeholders: replace every '{...}' string with real computed values
+     - Undefined name: define the variable before its first use, or guard with try/except
+     - Module-load error: fix the import or the top-level code that runs on import
+     Rewrite dashboard/app.py with all fixes applied."
   Run validation again
   iteration += 1
 
 If still failing after max_iterations:
   Write a minimal fallback dashboard:
-    - Loads data, shows df.describe(), basic bar chart
-    - No model dependencies, no placeholders
+    - st.set_page_config(page_title="Dashboard", layout="wide")
+    - Load data with pd.read_csv(data_path), show st.dataframe(df.describe())
+    - One st.bar_chart() of numeric column value counts
+    - No model dependencies, no undefined variables, no placeholders
   Log: "WARNING: Dashboard fell back to minimal version after {max_iterations} failed fixes"
 ```
 
