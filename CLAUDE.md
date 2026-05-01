@@ -1,0 +1,129 @@
+# ml-automation-plugin
+
+End-to-end ML automation workflow. Orchestrates 10 specialized agents across EDA, preprocessing, training, evaluation, deployment, and reporting. This is the base plugin — all other spark extensions depend on it.
+
+This is one of 14 Claude Code plugins in the [Blend Spark Harness](https://github.com/BLEND360). Work is tracked in Jira project [PM3](https://blend360.atlassian.net/jira/core/projects/PM3/board) — filter by label `plugin:plugin`.
+
+When invoked from CI/CD, you (Claude) act as an independent reviewer. You do not have the conversation context of whoever wrote the diff. Use this file plus `.claude/rules/` to ground your reasoning.
+
+## Plugin layout
+
+```
+ml-automation-plugin/
+├── AGENTS.md                  # Routing table — public API
+├── README.md
+├── .cortex-plugin/
+│   └── plugin.json            # Plugin manifest
+├── agents/                    # Agent definitions
+├── commands/                  # Slash commands
+├── skills/                    # Skills (one dir per skill)
+├── hooks/                     # Lifecycle hooks
+├── templates/                 # Reusable scaffolding
+├── .claude/                   # Claude Code config (rules, commands)
+├── .github/                   # CI/CD workflows, PR template, CODEOWNERS
+├── schemas/finding.schema.json
+└── scripts/                   # CI helpers (claude_review, post_findings, validate_plugin)
+```
+
+Treat the manifest, AGENTS.md, and the agents/commands/skills directories as the **plugin's public API**. Changes there are higher-risk than changes inside a single skill body.
+
+## Routing — agents and skills in this plugin
+
+### Available agents
+
+| Agent | When to use |
+|---|---|
+| `eda-analyst` | User wants to explore a dataset, check distributions, correlations, data quality, or run any exploratory analysis |
+| `ml-theory-advisor` | User asks about feature engineering strategy, data leakage prevention, model selection, or ML methodology |
+| `feature-engineering-analyst` | User wants to discover or design features, transform variables, or identify feature opportunities |
+| `mlops-engineer` | User wants to deploy a model, create an API, containerize with Docker, or set up CI/CD |
+| `developer` | User asks to implement or fix code on a feature branch |
+| `brutal-code-reviewer` | User wants a code quality or maintainability review |
+| `pr-approver` | User wants to review and merge a pull request |
+| `frontend-ux-analyst` | User wants feedback on a dashboard or UI design |
+| `orchestrator` | User requests a multi-agent workflow or full pipeline run |
+| `assigner` | Route an ambiguous request to the right specialist agent |
+
+### Available skills
+
+| Skill | Trigger |
+|---|---|
+| `/eda` | "explore this dataset", "run EDA on", "check data quality", "what's in this file" |
+| `/preprocess` | "preprocess the data", "build a preprocessing pipeline", "clean this data" |
+| `/train` | "train a model", "fit a classifier", "build a regression model" |
+| `/evaluate` | "evaluate the model", "show me metrics", "how good is the model" |
+| `/deploy` | "deploy the model", "create an API", "dockerize", "deploy to production" |
+| `/report` | "generate a report", "summarize results", "create an EDA report" |
+| `/test` | "write tests", "generate unit tests", "check test coverage" |
+| `/team-coldstart` | "full pipeline", "end to end from this CSV", "raw data to deployed model" |
+| `/team-analyze` | "quick multi-agent analysis", "analyze this dataset with multiple agents" |
+| `/team-review` | "multi-agent code review", "review this PR with multiple agents" |
+| `/status` | "show workflow status", "what have the agents done", "show reports" |
+| `/registry` | "show model registry", "list experiments", "show feature registry" |
+
+(See `AGENTS.md` for the canonical routing table; this section is a reminder for CI-invoked Claude.)
+
+## Severity criteria (review prompt)
+
+When you produce a code review, classify each finding into one severity. **Report only** BUG / SECURITY / CORRECTNESS / BREAKING / CRITICAL. Skip the rest — they erode trust in the bot.
+
+| Severity | When to flag | Examples |
+|---|---|---|
+| **CRITICAL** | Production breakage, data loss, security exposure | Unguarded `eval`/`exec`, leaked secret, parallelism in benchmark harness |
+| **BUG** | Code does not do what it claims | Off-by-one, wrong comparison operator, swallowed exception, comment contradicts code |
+| **SECURITY** | Vulnerability or unsafe pattern | SQL/command injection, weak crypto, credentials in code |
+| **CORRECTNESS** | Subtle incorrect behavior | Float `==`, mutable default arg, race condition, missing random seed |
+| **BREAKING** | Public-API contract change | Removed agent, renamed command, plugin manifest schema change without migration |
+
+**Do NOT flag** (skip silently): style/lint, missing docstrings on private functions, subjective preferences, "consider adding tests" without a specific case, micro-optimizations.
+
+## Few-shot examples for ambiguous cases
+
+**`try/except: pass` is sometimes the right answer.**
+
+```python
+# CORRECT — best-effort cache cleanup
+try:
+    cache.cleanup_expired()
+except Exception:
+    pass  # cleanup failure must not block the request
+```
+→ Do not flag. Comment makes intent clear.
+
+```python
+# WRONG — swallows errors that should bubble
+try:
+    response = api.call(payload); process(response)
+except Exception:
+    pass  # ???
+```
+→ Flag as BUG.
+
+**Mutable default argument.** `def f(xs=[])` → flag CORRECTNESS. `def f(xs=None)` with `if xs is None: xs = []` → fine.
+
+**Float equality.** `if score == 0.95` → flag CORRECTNESS, use `math.isclose`.
+
+## Test fixtures and conventions
+
+- Tests live in `tests/` (or alongside code as `test_*.py`).
+- Pytest fixtures in `conftest.py` at repo root. Check it before inventing new ones.
+- **Mock LLM/API calls** — never hit real services in unit tests. Integration tests are gated behind `INTEGRATION=1`.
+- Coverage floor: 70%. Configured in `pyproject.toml`.
+
+## Output format (CI invocations only)
+
+When invoked with `--output-format json --json-schema schemas/finding.schema.json`, return findings as a JSON array. The schema is enforced by tool_use; do not return prose.
+
+For interactive (non-CI) use, prose is fine.
+
+## Working with Claude Code
+
+- Project-scoped slash commands live in `.claude/commands/` (e.g., `/review`). Personal commands stay in `~/.claude/commands/`.
+- Skills with `context: fork` run in a sub-agent and don't pollute main context.
+- See `.claude/rules/` for path-scoped conventions (`python.md` for `*.py`, `testing.md` for tests, `plugin.md` for plugin layout).
+
+## Jira / GitHub conventions
+
+- Branch names: `PM3-<ticket>-<slug>` (required — CI rejects PRs without a `PM3-N` reference).
+- Smart commits: `PM3-12 #in-progress`, `PM3-12 #done`, `PM3-12 #time 2h`. See `CONTRIBUTING.md`.
+- PR template at `.github/pull_request_template.md` — required Jira link.
