@@ -33,6 +33,7 @@ End-to-end ML automation workflow. Orchestrates 10 specialized agents across EDA
 | `/team-review` | "multi-agent code review", "review this PR with multiple agents" |
 | `/status` | "show workflow status", "what have the agents done", "show reports" |
 | `/registry` | "show model registry", "list experiments", "show feature registry" |
+| `/trace` | "show traceability log", "audit agent actions", "what did the agents do", "show workflow timeline" |
 
 ## Routing
 
