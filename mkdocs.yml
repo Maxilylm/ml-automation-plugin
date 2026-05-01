@@ -1,7 +1,7 @@
 site_name: ml-automation-plugin
 site_description: End-to-end ML automation workflow. Orchestrates 10 specialized agents across EDA, preprocessing, training, evaluation, deployment, and reporting. This is the base plugin — all other spark extensions depend on it.
-site_url: https://blend360.github.io/ml-automation-plugin/
-repo_url: https://github.com/BLEND360/ml-automation-plugin
+site_url: https://blend360.github.io/ml-automation/
+repo_url: https://github.com/BLEND360/ml-automation
 edit_uri: edit/main/docs/
 
 theme:
@@ -37,8 +37,8 @@ plugins:
 
 nav:
   - Home: index.md
-  - Contributing: contributing.md
-  - Routing (AGENTS.md): agents.md
+# Contributing and AGENTS.md routing live at the repo root and aren't part of
+# the docs site. PM3-82: keep nav lean until docs/ has richer per-skill content.
 
 markdown_extensions:
   - admonition
