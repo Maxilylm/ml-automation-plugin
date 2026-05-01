@@ -60,6 +60,7 @@ Treat the manifest, AGENTS.md, and the agents/commands/skills directories as the
 | `/team-review` | "multi-agent code review", "review this PR with multiple agents" |
 | `/status` | "show workflow status", "what have the agents done", "show reports" |
 | `/registry` | "show model registry", "list experiments", "show feature registry" |
+| `/trace` | "show traceability log", "audit agent actions", "what did the agents do", "show workflow timeline" |
 
 (See `AGENTS.md` for the canonical routing table; this section is a reminder for CI-invoked Claude.)
 
