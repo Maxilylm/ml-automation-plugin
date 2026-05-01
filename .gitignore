@@ -2,8 +2,10 @@
 *.pyc
 __pycache__/
 .env
-.claude/
-
+.claude/sessions/
+.claude/cache/
+.claude/*.log
+.claude/.*
 # Eval workspace — scratch data, iteration outputs, audit reports
 eda-workspace/
 evals/iterations/

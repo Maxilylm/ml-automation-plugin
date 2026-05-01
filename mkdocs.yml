@@ -1,0 +1,51 @@
+site_name: ml-automation-plugin
+site_description: End-to-end ML automation workflow. Orchestrates 10 specialized agents across EDA, preprocessing, training, evaluation, deployment, and reporting. This is the base plugin — all other spark extensions depend on it.
+site_url: https://blend360.github.io/ml-automation-plugin/
+repo_url: https://github.com/BLEND360/ml-automation-plugin
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: true
+
+nav:
+  - Home: index.md
+  - Contributing: contributing.md
+  - Routing (AGENTS.md): agents.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
